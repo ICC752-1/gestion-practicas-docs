@@ -1,4 +1,4 @@
-# Sistema de logging del backend
+<h1 align="center"><em>Logging</em></h1>
 
 > [!NOTE]
 > Esta documentación describe la configuración real implementada en el código actual,
@@ -90,7 +90,7 @@ registros según el nivel de severidad.
 ### Matriz de comportamiento por nivel
 
 Esta matriz resume el efecto combinado de los filtros y el root logger. En la
-práctica responde a: **«si emito un log con este nivel, ¿a qué destinos va a parar?»**
+práctica responde a: *«si emito un log con este nivel, ¿a qué destinos va a parar?»*
 
 | Nivel | stdout | stderr | archivo general | archivo errores |
 | --- | --- | --- | --- | --- |
