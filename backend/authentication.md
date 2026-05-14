@@ -38,34 +38,28 @@ El módulo de autenticación se encuentra en la ruta `app/modules/auth/` donde a
   - `auth_controller.py`
   - `user_controller.py`
   - `role_controller.py`
-<br>
 - `dependencies/`
   - `auth_dependency.py`
   - `role_dependency.py`
-<br>
 - `models/`
   - `role_model.py`
   - `user_model.py`
   - `user_role_model.py`
-<br>
 - `repositories/`
   - `role_repository.py`
   - `user_repository.py`
   - `user_role_repository.py`
-<br>
 - `schemas/`
   - `auth_schema.py`
   - `rol_schema.py`
   - `token_schema.py`
   - `user_schema.py`
-<br>
 - `services/`
   - `auth_service.py`
   - `password_service.py`
   - `role_service.py`
   - `token_service.py`
   - `user_service.py`
-<br>
 - `utils/normalization.py`
 
 
@@ -89,7 +83,7 @@ El módulo de autenticación se encuentra en la ruta `app/modules/auth/` donde a
 | GET | `/roles/{role_id}` | Admin | URL Path: `role_id` | `RoleResponse` (200) |
 | PATCH | `/roles/{role_id}` | Admin | URL Path: `role_id`; JSON: `description` | `RoleResponse` (200) |
 
-> [!INFO]
+> [!NOTE]
 > Cuando el nivel de autenticación se indica como **Token**, se refiere a que sólamente se necesita el `access_token` del usuario incluido en el payload, mientras que para el nivel **Admin** ese token además debe estar asociado a un usuario perteneciente al grupo de roles administradores.
 
 > [!WARNING]
