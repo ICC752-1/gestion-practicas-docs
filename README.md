@@ -15,6 +15,9 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 * [`development-standards.md`](backend/development-standards.md)
   Define los estándares de desarrollo del backend. Establece criterios, convenciones y prácticas utilizadas para mantener consistencia en la implementación del código.
 
+* [`authentication.md`](backend/authentication.md)
+  Describe el módulo de autenticación implementado en el backend. Incluye la estructura interna del módulo, los endpoints disponibles para autenticación y administración de usuarios y roles, los schemas utilizados para validar requests y responses, el flujo principal de inicio de sesión basado en JWT, las reglas actuales de autorización según roles y las consideraciones operativas relacionadas con almacenamiento de tokens, gestión administrativa inicial y futuras funcionalidades previstas.
+
 > [!NOTE]
 > La documentación del backend describe el comportamiento real del sistema y las decisiones técnicas aplicadas en la implementación actual.
 
