@@ -7,10 +7,15 @@ Esta guía define lo mínimo que debe mantenerse para que las pruebas manuales d
 Cada módulo mantiene su colección junto a sus pruebas:
 
 ```text
-gestion-practicas-backend/tests/modules/<modulo>/insomnia_collection.json
+gestion-practicas-backend/tests/modules/<modulo>/<modulo>_test.yaml
 ```
 
-Ejemplos de módulos: `auth`, `admin`, `internships`, `notifications`, `documents`, `tracking`.
+Ejemplos actuales:
+
+- `gestion-practicas-backend/tests/modules/internships/internships_test.yaml`
+- `gestion-practicas-backend/tests/modules/notifications/notifications_test.yaml`
+
+Para módulos nuevos usar el mismo patrón: `auth_test.yaml`, `admin_test.yaml`, `documents_test.yaml`, `tracking_test.yaml`.
 
 ## Variables obligatorias
 
@@ -82,9 +87,16 @@ No es necesario documentar todos los casos posibles en Insomnia; los casos exhau
 
 Después de modificar una colección:
 
-1. Exportar en formato **Insomnia v4 JSON**.
-2. Guardar en `tests/modules/<modulo>/insomnia_collection.json`.
+1. Exportar como colección de Insomnia en formato **YAML**.
+2. Guardar en `tests/modules/<modulo>/<modulo>_test.yaml`.
 3. Incluir el archivo en el commit si el endpoint cambió.
+
+El encabezado esperado es el que genera Insomnia para colecciones YAML, por ejemplo:
+
+```yaml
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+```
 
 Mensaje sugerido:
 
@@ -99,4 +111,4 @@ git commit -m "test(<modulo>): actualizar colección Insomnia"
 - [ ] Los endpoints protegidos usan `Authorization: Bearer {{ _.access_token }}`.
 - [ ] Hay al menos un happy path y un error esperado para lo modificado.
 - [ ] Los payloads coinciden con Swagger y los schemas Pydantic actuales.
-- [ ] La colección exportada está incluida en el commit cuando corresponde.
+- [ ] La colección YAML exportada está incluida en el commit cuando corresponde.
