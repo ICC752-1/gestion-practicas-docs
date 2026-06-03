@@ -1,8 +1,8 @@
-# Contratos backend Sprint 8
+# Contratos backend
 
-Este documento funciona como indice de contratos HTTP backend para la tarea 8.2.
-No reemplaza la documentacion especifica de cada modulo; centraliza rutas activas
-y referencia las fuentes de verdad existentes.
+Este documento funciona como indice de contratos HTTP backend activos. No
+reemplaza la documentacion especifica de cada modulo; centraliza rutas activas y
+referencia las fuentes de verdad existentes.
 
 ## Fuentes relacionadas
 
@@ -38,15 +38,118 @@ Todos requieren token y un rol administrativo permitido por el backend.
 
 ## Practicas
 
-No existe `GET /internships` general para listar todas las practicas. El listado
-del estudiante autenticado es `GET /internships/me`. Los listados administrativos
-estan en `/admin/internships` y se documentan en `admin.md`.
+`GET /internships` existe solo para el dashboard de coordinador/director. El
+listado del estudiante autenticado sigue siendo `GET /internships/me`. Los
+listados administrativos del modulo `admin` estan en `/admin/internships` y se
+documentan en `admin.md`.
 
 | Metodo | Ruta | Acceso | Request | Response |
 | --- | --- | --- | --- | --- |
 | POST | `/internships` | Rol `Estudiante` | `InternshipCreateRequest` | `InternshipResponse` |
+| GET | `/internships` | Rol `Encargado de practica` o `Director de carrera` | Query opcional `status` | `list[InternshipDashboardListItem]` |
+| GET | `/internships/stats` | Rol `Encargado de practica` o `Director de carrera` | - | `InternshipDashboardStatsResponse` |
 | GET | `/internships/me` | Bearer token | - | `list[InternshipResponse]` |
+| GET | `/internships/{internship_id}/tracking` | Propietario o rol privilegiado | Path `internship_id` | `list[InternshipTrackingResponse]` |
 | GET | `/internships/{internship_id}` | Propietario o rol privilegiado | Path `internship_id` | `InternshipResponse` |
+
+### Dashboard coordinador
+
+Filtros validos para `GET /internships?status=`:
+
+- `submitted`: practicas sin estado o con estado `Pendiente`.
+- `in_review`: practicas con estado `En revisión`.
+- `approved`: practicas con estado `Aprobada`.
+- `rejected`: practicas con estado `Rechazada` o `Reprobada`.
+
+Respuesta resumida:
+
+```json
+[
+  {
+    "id": 15,
+    "org_name": "Empresa X",
+    "city": "Temuco",
+    "internship_type": "Práctica de Estudio I",
+    "start_date": "2026-06-01",
+    "end_date": "2026-08-31",
+    "upload_date": "2026-05-29T12:00:00",
+    "status": "submitted",
+    "status_label": "Pendiente",
+    "student": {
+      "id": 1,
+      "email": "student@correo.cl",
+      "first_name": "Juan",
+      "last_name": "Perez",
+      "rut": "12.345.678-9",
+      "degree": "Ingenieria Civil Informatica"
+    }
+  }
+]
+```
+
+`GET /internships/stats` retorna:
+
+```json
+{
+  "total": 12,
+  "submitted": 4,
+  "in_review": 3,
+  "approved": 3,
+  "rejected": 2
+}
+```
+
+### Tracking de estados
+
+`GET /internships/{internship_id}/tracking` retorna el historial cronologico de
+estados de una practica. Puede consultarlo el estudiante propietario o un rol
+privilegiado de lectura (`Encargado de practica`, `Director de carrera` o
+`Secretaria de Carrera`).
+
+Al crear una practica desde `POST /internships`, el backend asigna estado inicial
+`Pendiente` y registra una entrada inicial en el historial.
+
+Estados canonicos de practica:
+
+- `Pendiente`
+- `En revisión`
+- `Aprobada`
+- `Rechazada`
+
+`Reprobada` se mantiene solo como compatibilidad de lectura para datos antiguos
+y se interpreta como estado rechazado.
+
+Respuesta resumida:
+
+```json
+[
+  {
+    "id": 1,
+    "internship_id": 15,
+    "previous_status": null,
+    "new_status": {
+      "id": 1,
+      "title": "Pendiente",
+      "description": "La práctica existe como estado del proceso."
+    },
+    "actor": {
+      "id": 2,
+      "email": "student@correo.cl",
+      "first_name": "Juan",
+      "last_name": "Perez"
+    },
+    "reason": "Registro inicial de práctica",
+    "changed_at": "2026-06-03T10:30:00",
+    "metadata": {
+      "event": "internship_created"
+    }
+  }
+]
+```
+
+> Nota: el cambio publico de estado de una practica no se expone todavia por
+> endpoint HTTP. El servicio backend de transiciones queda preparado para las
+> acciones administrativas futuras de aprobacion, rechazo y derivacion.
 
 ### Payload de creacion de practica
 

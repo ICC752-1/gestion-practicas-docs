@@ -16,7 +16,7 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
   Describe el módulo de autenticación implementado en el backend. Incluye la estructura interna del módulo, los endpoints disponibles para autenticación y administración de usuarios y roles, los schemas utilizados para validar requests y responses, el flujo principal de inicio de sesión basado en JWT, las reglas actuales de autorización según roles y las consideraciones operativas relacionadas con almacenamiento de tokens, gestión administrativa inicial y futuras funcionalidades previstas.
 
 * [`api-contracts.md`](backend/api-contracts.md)
-  Centraliza los contratos HTTP activos del backend para autenticación, usuarios, roles y prácticas.
+  Centraliza los contratos HTTP activos del backend para autenticación, usuarios, roles, prácticas, dashboard coordinador y tracking de estados.
 
 * [`admin.md`](backend/admin.md)
   Describe los endpoints administrativos, contratos principales y reglas de negocio del módulo `admin`.
