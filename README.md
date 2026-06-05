@@ -39,6 +39,11 @@ La carpeta `frontend/` agrupa la documentación técnica asociada al frontend de
 
 La carpeta `deployment/` agrupa la documentación técnica asociada al despliegue y ejecución del sistema.
 
+* [`modelo-despliegue-actual.md`](deployment/modelo-despliegue-actual.md)
+  Describe el modelo vigente de despliegue en VPS, incluyendo DNS/TLS,
+  contenedores, flujo CI/CD, transferencia de imágenes, seguridad operacional y
+  consideraciones de operación.
+
 ## Convenciones
 
 - En el archivo [convencion-insomnia.md](convencion-insomnia.md) se encuentra definida la convención de Insomnia para pruebas de API en tiempo real.
