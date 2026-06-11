@@ -39,7 +39,7 @@ La carpeta `frontend/` agrupa la documentación técnica asociada al frontend de
 
 La carpeta `deployment/` agrupa la documentación técnica asociada al despliegue y ejecución del sistema.
 
-* [`modelo-despliegue-actual.md`](deployment/modelo-despliegue-actual.md)
+* [`modelo-despliegue.md`](deployment/modelo-despliegue.md)
   Describe el modelo vigente de despliegue en VPS, incluyendo DNS/TLS,
   contenedores, flujo CI/CD, transferencia de imágenes, seguridad operacional y
   consideraciones de operación.

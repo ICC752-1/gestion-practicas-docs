@@ -52,8 +52,8 @@ PostgreSQL
 
 | Repositorio | Rol en el despliegue |
 | --- | --- |
-| `gestion-practicas-backend` | Construye la imagen del backend, ejecuta lint/tests y despliega el servicio backend. |
-| `gestion-practicas-frontend` | Construye la imagen del frontend, ejecuta lint/build y despliega el servicio frontend. |
+| `gestion-practicas-backend` | Define CI y CD para construir la imagen del backend, ejecutar lint/tests y desplegar el servicio backend cuando el workflow esté disponible en `main`. |
+| `gestion-practicas-frontend` | Define CI y CD para construir la imagen del frontend, ejecutar lint/build y desplegar el servicio frontend cuando el workflow esté disponible en `main`. |
 | `gestion-practicas-deployment` | Define `compose.prod.yml`, ejemplos de entorno, scripts de despliegue y sincronización de archivos base hacia la VPS. |
 | `gestion-practicas-docs` | Mantiene documentación técnica y operacional del proyecto. |
 | `gestion-practicas-vps-management` | Opera el estado del host: usuarios, llaves, Nginx, DuckDNS, certificados y runbooks. |
@@ -74,6 +74,8 @@ Este diseño evita publicar directamente los puertos del backend y la base de da
 ## Modelo CI/CD
 
 El despliegue evita usar GHCR u otro registro de contenedores. En su lugar, los runners construyen imágenes Docker y las transfieren como archivos comprimidos hacia la VPS.
+
+Los workflows de CD de backend y frontend están configurados para ejecutarse desde `main`. En la verificación de Sprint 10.22, esos workflows existen en ramas de desarrollo, pero aún no están presentes en `main`; por lo tanto, el despliegue productivo queda condicionado a aceptar o mergear los PR correspondientes hacia `main`.
 
 Flujo general:
 
@@ -143,7 +145,9 @@ El despliegue vigente quedó verificado con:
 - Documentación OpenAPI en `/api/docs` respondiendo HTTP `200`.
 - Esquema OpenAPI en `/api/openapi.json` respondiendo HTTP `200`.
 - Backend y PostgreSQL en estado saludable dentro de Docker Compose.
-- Workflows CI/CD vigentes pasando en backend, frontend y deployment.
+- Workflows CI/CD definidos para backend y frontend en ramas de desarrollo, con CD configurado para activarse desde `main`.
+- Pendiente: aceptar o mergear los PR hacia `main` para que los workflows de CD backend/frontend queden activos en la rama productiva.
+- El repositorio `gestion-practicas-deployment` mantiene `compose.prod.yml` y scripts necesarios para ejecutar el despliegue desde los workflows de aplicación.
 
 ## Limitaciones y próximos pasos
 
