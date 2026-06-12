@@ -28,8 +28,8 @@ No quedan autorizados por este contrato:
 
 ## Campos Editables
 
-Antes de la aprobación, los roles autorizados pueden corregir únicamente estos
-campos de la práctica:
+Mientras la práctica no esté anulada ni en estado terminal, los roles
+autorizados pueden corregir únicamente estos campos:
 
 - `org_name`
 - `sector`
@@ -72,8 +72,8 @@ de requisitos del estudiante. Esos flujos pertenecen a contratos separados.
 
 ## Reglas De Estado
 
-La edición administrativa se permite solo mientras la práctica no esté en un
-estado terminal.
+La edición administrativa y la anulación lógica se permiten solo mientras la
+práctica no esté anulada ni en estado terminal.
 
 Estados terminales actuales:
 
@@ -190,9 +190,9 @@ La anulación además queda reflejada directamente en la práctica mediante
 ## Consideración Operativa
 
 El proyecto no usa migraciones de base de datos. Las columnas de anulación lógica
-están definidas en `app/core/database/init.sql` para bases nuevas. Una base local
-creada antes de este cambio debe recrearse o recibir un `ALTER TABLE` equivalente
-antes de probar estos endpoints.
+están definidas en `gestion-practicas-backend/app/core/database/init.sql` para
+bases nuevas. Una base local creada antes de este cambio debe recrearse o recibir
+un `ALTER TABLE` equivalente antes de probar estos endpoints.
 
 ## Riesgos
 
