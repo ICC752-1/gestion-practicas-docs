@@ -24,6 +24,9 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 * [`business_rules.md`](backend/business_rules.md)
   Documenta reglas de negocio vigentes, incluyendo la obligatoriedad del seguro escolar según período de práctica.
 
+* [`admin-internship-management.md`](backend/admin-internship-management.md)
+  Define el contrato funcional de edición administrativa acotada y anulación lógica de prácticas, incluyendo roles autorizados, campos editables, campos protegidos, reglas de estado y trazabilidad esperada.
+
 > [!NOTE]
 > La documentación del backend describe el comportamiento real del sistema y las decisiones técnicas aplicadas en la implementación actual.
 
