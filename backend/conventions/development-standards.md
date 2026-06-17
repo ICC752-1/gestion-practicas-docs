@@ -1,6 +1,14 @@
-# Development Standards - Backend
+<h1 align="center"><em>Development Standards - Backend</em></h1>
 
----
+> [!NOTE]
+> Este documento define los estándares de desarrollo backend del proyecto.
+
+## Contenidos
+- [1. Nomenclatura de Ramas para Desarrollo](#1-nomenclatura-de-ramas-para-desarrollo)
+- [2. Convención de Commits](#2-convención-de-commits)
+- [3. Reglas de Integración (Pull Requests)](#3-reglas-de-integración-pull-requests)
+- [4. Política de Liberación, Entregas y Versionado](#4-política-de-liberación-entregas-y-versionado)
+- [5. Estándares de Codificación](#5-estándares-de-codificación)
 
 ## 1. Nomenclatura de Ramas para Desarrollo
 
@@ -27,8 +35,6 @@ Los tipos de ramas definidos son:
 - **test/**: desarrollo o modificación de pruebas.
 
 Esta convención permite identificar rápidamente el propósito de cada rama, facilitando la gestión del repositorio.
-
----
 
 ## 2. Convención de Commits
 
@@ -66,8 +72,6 @@ Se establecen las siguientes reglas:
 
 Estas medidas aseguran la integridad y auditabilidad del proyecto.
 
----
-
 ## 3. Reglas de Integración (Pull Requests)
 
 La integración de cambios se realizará exclusivamente mediante **Pull Requests (PR)**.
@@ -94,8 +98,6 @@ Antes de aprobar un PR, se debe asegurar que:
 * No se afectan funcionalidades existentes.  
 * Se cumplen los estándares definidos.  
 * El cambio ha sido probado.
-
----
 
 ## 4. Política de Liberación, Entregas y Versionado
 
@@ -125,8 +127,6 @@ Interpretación:
 * Cambios relevantes documentados en un **changelog**.  
 * Las versiones oficiales se generarán desde la rama `main`.
 
----
-
 ## 5. Estándares de Codificación
 
 ### 5.1 Idioma
@@ -142,7 +142,7 @@ Interpretación:
 * Clases: **PascalCase** en inglés. Ejemplo: `AuthService`, `InternshipRepository`.
 * Constantes: **UPPER_CASE** en inglés. Ejemplo: `ACCESS_TOKEN_EXPIRE_MINUTES`.
 * Rutas de API: minúsculas, plurales y en inglés cuando representen recursos. Ejemplo: `/internships`, `/documents/types`.
-* Tablas y modelos ORM: nombres en inglés, alineados con el esquema relacional vigente cuando sea posible.
+* Tablas y modelos ORM: objetos SQL en `lower_snake_case`, sin tildes, sin comillas y en inglés. `__tablename__`, `ForeignKey(...)` y nombres de enum PostgreSQL deben coincidir con el esquema relacional vigente. Ver `docs/conventions/database-naming.md`.
 
 ### 5.3 Docstrings en Python
 
