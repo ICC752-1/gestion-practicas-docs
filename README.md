@@ -30,6 +30,10 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 - [`backend/conventions/development-standards.md`](backend/conventions/development-standards.md): estándares de ramas, commits, PRs, versionado y codificación backend.
 - [`backend/conventions/database-naming.md`](backend/conventions/database-naming.md): convención de nombres BD/ORM para tablas, enums, modelos y llaves foráneas.
 
+### Pruebas
+
+- [`backend/tests/README.md`](backend/tests/README.md): estrategia, glosario, resumen de cobertura e índice de casos de prueba del backend.
+
 ### Plantillas
 
 - [`backend/templates/module-template.md`](backend/templates/module-template.md): plantilla para documentación técnica de módulos backend.
