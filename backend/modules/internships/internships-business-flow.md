@@ -1,12 +1,12 @@
 # Reglas de Negocio: Flujo de Prácticas
 
-## RN-01: Obligatoriedad de Seguro Escolar según Período de Práctica
+## RN-01: Obligatoriedad de Seguro Escolar según Fechas de Práctica
 
 ### Descripción
 
-La validación del seguro escolar garantiza que una práctica estival no sea
-autorizada formalmente sin cobertura institucional o una excepción
-administrativa trazable.
+La validación del seguro escolar garantiza que una práctica realizada fuera del
+periodo académico regular no sea autorizada formalmente sin validación de
+Dirección de carrera o una excepción administrativa trazable.
 
 Para esta regla se distinguen dos momentos:
 
@@ -17,13 +17,15 @@ Para esta regla se distinguen dos momentos:
 
 ### Definición de la Regla
 
-- **Práctica Semestral (`internship_period = "Semestre"`):** el seguro escolar
-  no bloquea la creación ni la aprobación de la práctica.
+- **Periodo académico regular:** una práctica queda cubierta automáticamente si
+  sus fechas están completamente dentro de marzo-junio o agosto-noviembre del
+  mismo año. En ese caso el backend marca `insurance_status=validated` para la
+  solicitud concreta.
 
-- **Práctica Estival (`internship_period = "Verano"` o `"Invierno"`):** se
-  permite crear y revisar la solicitud, pero no puede quedar `Aprobada` si el
-  estudiante no tiene seguro escolar institucional vigente ni una excepción
-  administrativa para esa práctica.
+- **Periodo fuera de rango regular:** se permite crear y revisar la solicitud,
+  pero no puede quedar `Aprobada` si la solicitud concreta no tiene
+  `insurance_status=validated`, `insurance_status=exception_authorized` o una
+  excepción administrativa `school_insurance`.
 
 La creación en estado `Pendiente` no representa inscripción académica,
 habilitación para iniciar actividades ni confirmación de cobertura.
@@ -34,34 +36,55 @@ habilitación para iniciar actividades ni confirmación de cobertura.
 
 - **Reglamento de Prácticas FICA:** Dispone que toda actividad realizada fuera del periodo académico ordinario (periodo estival) requiere una extensión explícita de la cobertura del seguro para resguardar la integridad del alumno y la responsabilidad de la institución.
 
-### Fuente de verdad institucional
+### Fuente de verdad
 
 - El estudiante no declara ni puede enviar `has_school_insurance` en
   `POST /internships`.
-- La fuente de verdad es `student_registration_requirements`, usando
-  `requirement = "school_insurance"` e `is_completed`.
+- La fuente autoritativa para aprobar una solicitud concreta es
+  `Internship.insurance_status`.
+- El requisito institucional `student_registration_requirements` con
+  `requirement = "school_insurance"` queda como registro institucional y apoyo
+  diagnóstico, pero no sustituye la validación explícita de una solicitud fuera
+  de periodo regular.
 - `Internship.has_school_insurance` es una copia de compatibilidad calculada por
   backend. No debe usarse como fuente autoritativa para aprobar.
-- Al intentar la aprobación final, el backend vuelve a consultar el requisito
-  institucional vigente. Así, una cobertura regularizada después de crear la
-  solicitud permite continuar sin recrearla.
+- Al intentar la aprobación final, el backend valida fechas y estado de seguro
+  de la solicitud. Si las fechas están dentro del periodo regular, puede
+  auto-validar la solicitud; si están fuera, exige validación explícita o
+  excepción.
 
 ### Gestión administrativa del seguro
 
-Los roles `Encargado de practica` y `Director de carrera` pueden consultar y
-actualizar el requisito institucional mediante:
+El rol `Director de carrera` puede validar el seguro escolar de una solicitud
+concreta mediante:
+
+- `PATCH /admin/internships/{internship_id}/school-insurance`
+
+Estados admitidos para la solicitud:
+
+| Estado | Uso |
+| --- | --- |
+| `pending` | La solicitud aún no tiene validación explícita. |
+| `validated` | Dirección validó el seguro para la solicitud concreta. |
+| `requires_exception` | La solicitud requiere excepción o regularización antes de aprobar. |
+| `not_applicable` | La regla no aplica para esta solicitud. |
+
+Además, `Director de carrera` puede consultar y actualizar el requisito
+institucional histórico del estudiante mediante:
 
 - `GET /admin/students/{student_id}/registration-requirements`
 - `PATCH /admin/students/{student_id}/registration-requirements/school-insurance`
 
 El `PATCH` crea el requisito si todavía no existe y registra `completed_at` y
 `updated_by`. Enviar `is_completed = false` revoca el cumplimiento registrado y
-limpia `completed_at`.
+limpia `completed_at`. Este registro no reemplaza la validación por solicitud
+cuando la práctica está fuera del periodo regular.
 
 ### Excepción Administrativa 
  
-- Cuando una práctica estival no cuenta con seguro institucional vigente, un
-  actor autorizado puede registrar una excepción justificada para esa práctica.
+- Cuando una práctica fuera de periodo regular no cuenta con validación de
+  seguro, un actor autorizado puede registrar una excepción justificada para esa
+  práctica.
 
 #### Principio de invariante
  
@@ -73,7 +96,7 @@ limpia `completed_at`.
  
 | Rol | Puede otorgar excepción (`grant_exception`) |
 | :--- | :---: |
-| Encargado de práctica | **Sí** |
+| Encargado de práctica | No |
 | Director de carrera | **Sí** |
 | Secretaria de Carrera | No |
 | Estudiante | No |
@@ -82,8 +105,8 @@ limpia `completed_at`.
  
 La excepción solo es relevante cuando se cumplen estas condiciones:
  
-1. `internship_period` es `"Verano"` o `"Invierno"`.
-2. El requisito institucional `school_insurance` no está completado.
+1. Las fechas de la práctica quedan fuera de marzo-junio o agosto-noviembre.
+2. La solicitud no tiene `insurance_status=validated`.
 3. La acción `approve` dejaría la práctica en estado `Aprobada`.
 
 Una llamada a `approve` que solo produce `Pendiente -> En revisión` no queda
@@ -112,14 +135,14 @@ Esta es una decisión de diseño consciente, pendiente de revisión en una tarea
 
 ### Endpoint: `POST /internships`
 
-#### Caso 1 — Crear solicitud estival sin seguro
+#### Caso 1 — Crear solicitud fuera de periodo regular sin seguro validado
 
 La solicitud se crea en estado `Pendiente`. Esta operación no formaliza la
 práctica y no exige seguro.
 
 **Respuesta:** `201 Created`
 
-#### Caso 2 — Enviar solicitud estival a revisión sin seguro
+#### Caso 2 — Enviar solicitud fuera de periodo regular a revisión sin seguro validado
 
 Si `POST /internships/{internship_id}/approve` produce solamente
 `Pendiente -> En revisión`, la operación se permite.
@@ -130,10 +153,11 @@ Si `POST /internships/{internship_id}/approve` produce solamente
 
 ### Endpoint: `POST /internships/{internship_id}/approve`
 
-#### Caso 3 — Rechazo de aprobación final estival sin seguro
+#### Caso 3 — Rechazo de aprobación final fuera de periodo regular sin seguro validado
 
-Cuando la transición dejaría la práctica en `Aprobada`, el backend consulta el
-requisito institucional vigente. Si no está completado y no existe excepción:
+Cuando la transición dejaría la práctica en `Aprobada`, el backend valida las
+fechas y `insurance_status` de la solicitud concreta. Si está fuera del periodo
+regular, no tiene validación explícita y no existe excepción:
 
 **Respuesta:** `409 Conflict`
 
@@ -141,22 +165,24 @@ requisito institucional vigente. Si no está completado y no existe excepción:
 {
   "detail": {
     "rule": "school_insurance",
-    "message": "La práctica es estival y no cuenta con seguro escolar. Se requiere una excepción administrativa registrada para continuar (D.S. 313)."
+    "insurance_status": "requires_exception",
+    "message": "La práctica se realiza fuera del periodo académico regular y no cuenta con seguro escolar validado. Se requiere una excepción administrativa registrada para continuar (D.S. 313)."
   }
 }
 ```
 
-#### Caso 4 — Práctica semestral
+#### Caso 4 — Práctica dentro del periodo regular
 
-La solicitud y su aprobación se permiten sin seguro escolar.
+La solicitud se auto-valida para seguro escolar si sus fechas quedan
+completamente dentro de marzo-junio o agosto-noviembre.
 
-#### Caso 5 — Práctica estival con seguro regularizado
+#### Caso 5 — Práctica fuera de periodo regular con validación explícita
 
-Si el seguro se registra después de crear la solicitud y antes de su aprobación
-final, la consulta vigente permite aprobarla. No es necesario crear otra
-práctica.
+Si Dirección de carrera marca la solicitud concreta con
+`insurance_status=validated`, la aprobación puede continuar. No es necesario
+crear otra solicitud.
 
-#### Caso 6 — Práctica estival con excepción
+#### Caso 6 — Práctica fuera de periodo regular con excepción
 
 Una excepción `school_insurance` permite la aprobación final, pero el requisito
 institucional permanece incompleto.
@@ -262,12 +288,18 @@ El flujo de evaluación de una solicitud de práctica está diseñado bajo un mo
 1. **Flexibilidad del Flujo Inicial:** Una práctica en estado `Pendiente` puede transicionar directamente a `Aprobada` o `Rechazada` sin obligar al registro de la etapa intermedia `En revisión`.
 2. **Jerarquía Concurrente de Aprobación:** Tanto el **Encargado de Práctica** como el **Director de Carrera** poseen permisos idénticos para las acciones de aprobación (`approve`) y rechazo (`reject`), variando únicamente el impacto automático en el estado de destino para solicitudes nuevas.
 3. **Desacoplamiento de Gestión Documental:** El rol de **Secretaría de Carrera** interviene exclusivamente en la fase de tramitación documental posterior o paralela mediante la acción de derivación (`derive`). Secretaría **no posee** facultades para dictaminar la aprobación o rechazo técnico-académico de la práctica.
+4. **Inicio automático de revisión:** cuando `Encargado de practica` o
+   `Director de carrera` abre el detalle de una solicitud `Pendiente`, el
+   frontend puede invocar `POST /internships/{internship_id}/start-review`.
+   Esta acción es idempotente y solo realiza `Pendiente -> En revisión`; si la
+   solicitud ya cambió de estado, retorna el estado actual sin modificarlo.
 
 ### Matriz de Permisología Funcional
 
 | Origen | Destino | Acción Funcional | Encargado de Práctica | Director de Carrera | Secretaría de Carrera |
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | `Pendiente` | `En revisión` | `approve` (flujo regular) | **Sí** | **Sí** | No |
+| `Pendiente` | `En revisión` | `start-review` (apertura de detalle) | **Sí** | **Sí** | No |
 | `Pendiente` | `Aprobada` | `approve` (`skip_review=True` / Directo) | **Sí** | **Sí** | No |
 | `Pendiente` | `Rechazada` | `reject` | **Sí** | **Sí** | No |
 | `En revisión` | `Aprobada` | `approve` | **Sí** | **Sí** | No |
@@ -364,7 +396,7 @@ Esta es una decisión de diseño consciente, pendiente de revisión en una tarea
 ```json
 {
   "rule": "school_insurance",
-  "reason": "Póliza en proceso de firma. Documentación física recibida por Secretaría."
+  "reason": "Dirección de carrera autoriza la continuidad por antecedente institucional trazable."
 }
 ```
  
@@ -375,12 +407,12 @@ Esta es una decisión de diseño consciente, pendiente de revisión en una tarea
   "id": 1,
   "internship_id": 15,
   "rule": "school_insurance",
-  "reason": "Póliza en proceso de firma. Documentación física recibida por Secretaría.",
+  "reason": "Dirección de carrera autoriza la continuidad por antecedente institucional trazable.",
   "authorized_by": {
     "id": 5,
-    "email": "encargado@ufro.cl",
-    "first_name": "Juan",
-    "last_name": "Coordinador"
+    "email": "director@ufro.cl",
+    "first_name": "Ana",
+    "last_name": "Directora"
   },
   "authorized_at": "2026-06-09T14:30:00"
 }
@@ -416,9 +448,9 @@ Esta es una decisión de diseño consciente, pendiente de revisión en una tarea
 }
 ```
  
-### Endpoint: `POST /internships/{internship_id}/approve` (aprobación final estival)
+### Endpoint: `POST /internships/{internship_id}/approve` (aprobación final fuera de periodo regular)
  
-#### Caso 8 — Rechazo: transición a `Aprobada` sin seguro ni excepción
+#### Caso 8 — Rechazo: transición a `Aprobada` sin seguro validado ni excepción
  
 **Respuesta:** `409 Conflict`
  
@@ -426,7 +458,8 @@ Esta es una decisión de diseño consciente, pendiente de revisión en una tarea
 {
   "detail": {
     "rule": "school_insurance",
-    "message": "La práctica es estival y no cuenta con seguro escolar. Se requiere una excepción administrativa registrada para continuar (D.S. 313)."
+    "insurance_status": "requires_exception",
+    "message": "La práctica se realiza fuera del periodo académico regular y no cuenta con seguro escolar validado. Se requiere una excepción administrativa registrada para continuar (D.S. 313)."
   }
 }
 ```
@@ -649,3 +682,45 @@ estudiante.
   práctica no exportable responde `409`.
 
 ---
+
+## RN-08: Seguimiento agregado de solicitud, ejecución y cierre
+
+### Descripción
+
+El sistema mantiene dos vistas complementarias:
+
+- **Historial administrativo:** registra transiciones de `currentstate` y
+  acciones administrativas con `InternshipStatusHistory`.
+- **Seguimiento de ciclo de vida:** combina estado administrativo, ejecución,
+  autoevaluación, evaluación del supervisor, presentación final y cierre para
+  mostrar al estudiante y a administración el avance real de la práctica.
+
+### Definición de la Regla
+
+1. La solicitud inicia como `Solicitud registrada`.
+2. Al abrir el detalle por un rol resolutor, puede quedar `Solicitud en
+   revisión` mediante `start-review`.
+3. La ejecución de práctica se considera disponible solo después de que la
+   solicitud está `Aprobada`.
+4. La autoevaluación del estudiante es un hito posterior a la ejecución.
+5. La invitación temporal al supervisor se genera después de que el estudiante
+   envía su autoevaluación. La solicitud aprobada por sí sola no basta para
+   generar la evaluación del supervisor.
+6. La evaluación del supervisor queda completa cuando el enlace temporal es
+   usado correctamente.
+7. La presentación final debe estar agendada y luego completada antes de cerrar
+   la práctica.
+8. La aprobación/cierre final de práctica solo debe estar disponible cuando se
+   cumple: solicitud aprobada, autoevaluación enviada, evaluación supervisor
+   completada y presentación final completada.
+
+### Contrato de seguimiento
+
+`GET /internships/{internship_id}/lifecycle-tracking` retorna eventos
+normalizados con estado `completed`, `current`, `pending` o `blocked`, además de
+banderas para habilitar acciones como reenviar/generar invitación de supervisor
+o cerrar la práctica.
+
+Este endpoint no reemplaza `GET /internships/{internship_id}/tracking`: el
+primero sirve para avance funcional del estudiante y administración; el segundo
+sirve como historial administrativo auditable.

@@ -29,8 +29,11 @@ aprobación.
 
 - Registrar solicitudes de práctica asociadas al estudiante autenticado.
 - Listar prácticas del estudiante y prácticas visibles para dashboard.
-- Consultar detalle, seguimiento y excepciones de una práctica.
+- Consultar detalle, historial administrativo, seguimiento de ciclo de vida y
+  excepciones de una práctica.
 - Ejecutar acciones administrativas de aprobación, rechazo y derivación.
+- Iniciar revisión automáticamente al abrir el detalle de una solicitud
+  pendiente.
 - Registrar excepciones administrativas sobre reglas de negocio específicas.
 - Corregir campos editables con trazabilidad administrativa.
 - Anular lógicamente una práctica con motivo obligatorio.
@@ -49,6 +52,8 @@ resultado se usa como prerrequisito del flujo de aprobación.
 - Consulta de prácticas propias y administrativas.
 - Normalización de estados para dashboard.
 - Gestión de transiciones de estado con historial.
+- Construcción del seguimiento agregado de solicitud, ejecución, evaluación y
+  cierre.
 - Validación de reglas de aprobación.
 - Registro y consulta de excepciones administrativas.
 - Edición administrativa acotada.
@@ -115,10 +120,13 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 
 #### Consulta propia o privilegiada
 
-1. El usuario llama a `GET /internships/me`, `GET /internships/{internship_id}` o `GET /internships/{internship_id}/tracking`.
+1. El usuario llama a `GET /internships/me`, `GET /internships/{internship_id}`,
+   `GET /internships/{internship_id}/tracking` o
+   `GET /internships/{internship_id}/lifecycle-tracking`.
 2. El controller valida Bearer token.
-3. Para detalle y tracking se verifica que el usuario sea propietario o tenga rol privilegiado.
-4. Se retorna la práctica o su historial cronológico.
+3. Para detalle, tracking y ciclo de vida se verifica que el usuario sea
+   propietario o tenga rol privilegiado.
+4. Se retorna la práctica, su historial cronológico o su avance agregado.
 
 #### Inducción obligatoria
 
@@ -158,10 +166,34 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 3. Se rechaza si la práctica no existe o está en estado terminal.
 4. Se validan reglas de inducción, secuencialidad, tesis y ramo paralelo.
 5. Se determina el estado destino según actor y estado actual.
-6. Si la transición termina en `Aprobada`, se valida seguro escolar para periodos estivales.
+6. Si la transición termina en `Aprobada`, se valida seguro escolar según las
+   fechas de la práctica: marzo-junio y agosto-noviembre se auto-validan;
+   fuera de esos rangos se exige validación explícita de Dirección o excepción
+   `school_insurance`.
 7. Se actualiza el estado y se registra historial.
 8. Si queda `Aprobada`, se sincroniza `StudentInternshipRequirement`.
 9. Se intenta notificar al estudiante.
+
+#### Inicio automático de revisión
+
+1. El frontend de coordinación o dirección puede llamar a
+   `POST /internships/{internship_id}/start-review` al abrir el detalle.
+2. El controller exige rol `Encargado de practica` o `Director de carrera`.
+3. El service valida permiso `approve`.
+4. Si la solicitud está `Pendiente`, se registra `Pendiente -> En revisión` con
+   historial y metadata `{"action": "start_review"}`.
+5. Si la solicitud ya no está `Pendiente` o está anulada, la acción es
+   idempotente y retorna la práctica sin modificarla.
+
+#### Seguimiento de ciclo de vida
+
+1. El usuario llama a `GET /internships/{internship_id}/lifecycle-tracking`.
+2. El controller valida que sea propietario o rol privilegiado.
+3. El service combina historial administrativo, autoevaluación, evaluación del
+   supervisor, invitaciones al supervisor y presentaciones finales.
+4. Se retorna una lista normalizada de eventos con avance porcentual, paso
+   actual y banderas para habilitar acciones.
+5. El endpoint no modifica estados; solo calcula la vista de avance.
 
 #### Rechazo y preparación documental para DIRAE
 
@@ -213,12 +245,14 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 | GET | `/internships/registration-eligibility` | Retorna diagnóstico de requisitos y siguiente paso. | Bearer token |
 | GET | `/internships/{internship_id}` | Obtiene detalle de una práctica. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/tracking` | Lista historial cronológico de estados. | Propietario o rol privilegiado |
+| GET | `/internships/{internship_id}/lifecycle-tracking` | Retorna seguimiento agregado de solicitud, ejecución, evaluaciones, presentación y cierre. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/dirae-tracking` | Lista historial interno de preparación/exportación del expediente local. No consulta estado externo en DIRAE. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/student-actions` | Indica acciones disponibles para el estudiante. | Estudiante propietario |
 | PATCH | `/internships/{internship_id}/student` | Permite corrección acotada por estudiante cuando el estado lo permite. | Estudiante propietario |
 | POST | `/internships/{internship_id}/student/cancel` | Anula una solicitud propia con motivo. | Estudiante propietario |
 | PATCH | `/internships/{internship_id}/admin` | Corrige campos editables con trazabilidad. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/cancel` | Anula lógicamente una práctica. | Encargado de practica, Director de carrera |
+| POST | `/internships/{internship_id}/start-review` | Marca una solicitud pendiente como `En revisión` al abrir detalle administrativo. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/approve` | Avanza o aprueba una práctica. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
 | POST | `/internships/{internship_id}/reject` | Rechaza una práctica con motivo obligatorio. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
 | POST | `/internships/{internship_id}/derive` | Inicia preparación/revisión local del expediente para exportación, sin cambiar `currentstate`. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
@@ -305,6 +339,7 @@ administrativo.
 ```json
 {
   "has_school_insurance": false,
+  "insurance_status": "requires_exception",
   "has_induction": true,
   "requires_retake": false,
   "has_school_insurance_exception": false,
@@ -316,7 +351,7 @@ administrativo.
   "blocking_internship_status": null,
   "can_create_request": true,
   "blocked": true,
-  "next_step": "Debe registrar el seguro escolar ante la unidad correspondiente o contar con una excepción antes de aprobar la práctica estival."
+  "next_step": "Dirección de carrera debe validar el seguro escolar de la solicitud o registrar una excepción antes de aprobar."
 }
 ```
 
@@ -394,6 +429,52 @@ Entrada cronológica del historial de estados o acciones administrativas.
   }
 }
 ```
+
+</details>
+
+<details>
+<summary><strong>InternshipLifecycleResponse</strong></summary>
+
+Seguimiento agregado del ciclo completo. A diferencia de
+`InternshipTrackingResponse`, no es auditoría de transiciones: es una vista
+funcional para mostrar avance y habilitar acciones.
+
+```json
+{
+  "internship_id": 15,
+  "progress_percentage": 70,
+  "current_step": "Evaluación del supervisor completada",
+  "self_evaluation_submitted": true,
+  "supervisor_invitation_sent": true,
+  "supervisor_evaluation_submitted": false,
+  "final_presentation_scheduled": false,
+  "final_presentation_completed": false,
+  "can_generate_supervisor_invitation": true,
+  "can_close_practice": false,
+  "events": [
+    {
+      "id": "request_approved",
+      "type": "request_approved",
+      "title": "Solicitud de práctica aprobada",
+      "description": "La solicitud administrativa fue aprobada.",
+      "status": "completed",
+      "occurred_at": "2026-06-16T12:30:00Z",
+      "metadata": {}
+    },
+    {
+      "id": "supervisor_evaluation_submitted",
+      "type": "supervisor_evaluation_submitted",
+      "title": "Evaluación del supervisor completada",
+      "description": "El supervisor completó la evaluación del estudiante.",
+      "status": "current",
+      "occurred_at": null,
+      "metadata": {}
+    }
+  ]
+}
+```
+
+Estados posibles por evento: `completed`, `current`, `pending`, `blocked`.
 
 </details>
 
@@ -481,6 +562,11 @@ La preparación local del expediente se expresa por transiciones internas de
 | `Director de carrera` | `approve`, `reject`, `grant_exception`, `admin_edit`, `cancel`. |
 | `Secretaria de Carrera` | `derive`. |
 
+> [!NOTE]
+> `grant_exception` aplica a varias reglas. Para `school_insurance`, el service
+> exige además rol `Director de carrera`; el encargado puede registrar otras
+> excepciones habilitadas, pero no autorizar seguro escolar.
+
 #### Tipos y periodos
 
 | Tipo | Valor |
@@ -502,13 +588,16 @@ La preparación local del expediente se expresa por transiciones internas de
 - `Práctica de Estudio II` requiere `Práctica de Estudio I` aprobada en `StudentInternshipRequirement` o excepción `sequentiality`.
 - `Tesis` requiere `Práctica de Estudio II` aprobada en `StudentInternshipRequirement` o excepción `sequentiality_thesis`.
 - `Práctica Controlada` requiere excepción `parallel_course` mientras no exista modelamiento de co-requisitos.
-- Periodos `Verano` e `Invierno` requieren seguro escolar vigente para llegar a `Aprobada`, salvo excepción `school_insurance`.
+- Las fechas dentro de marzo-junio o agosto-noviembre se auto-validan para
+  seguro escolar. Fuera de esos rangos, la solicitud requiere
+  `insurance_status=validated` o excepción `school_insurance` antes de llegar a
+  `Aprobada`.
 
 #### Reglas exceptuables
 
 | Regla | Cuándo aplica |
 | --- | --- |
-| `school_insurance` | Permite aprobar práctica estival sin seguro escolar vigente registrado. |
+| `school_insurance` | Permite aprobar una solicitud fuera de periodo regular sin seguro validado, solo con autorización de Dirección de carrera. |
 | `sequentiality` | Permite avanzar Práctica de Estudio II sin Práctica de Estudio I aprobada. |
 | `sequentiality_thesis` | Permite avanzar Tesis sin Práctica de Estudio II aprobada. |
 | `parallel_course` | Permite avanzar Práctica Controlada pese a co-requisitos pendientes o no modelados. |
@@ -520,10 +609,19 @@ La preparación local del expediente se expresa por transiciones internas de
 
 #### Seguro escolar
 
-`has_school_insurance` se calcula desde `StudentRegistrationRequirement` al crear
-la solicitud. Durante la aprobación final de prácticas estivales se consulta de
-nuevo el requisito vigente, por lo que una regularización posterior a la creación
-puede permitir aprobar sin excepción.
+`has_school_insurance` se calcula desde `StudentRegistrationRequirement` o desde
+la auto-validación por fechas regulares al crear la solicitud, pero la fuente
+autoritativa para aprobar es `insurance_status` de la solicitud concreta.
+
+Si la práctica está completamente dentro de marzo-junio o agosto-noviembre, el
+backend puede marcar `insurance_status=validated` automáticamente. Si está fuera
+de esos rangos, Dirección de carrera debe validar la solicitud mediante
+`PATCH /admin/internships/{internship_id}/school-insurance` o registrar una
+excepción `school_insurance`.
+
+Aunque `Encargado de practica` y `Director de carrera` pueden registrar
+excepciones generales, la excepción `school_insurance` queda restringida a
+`Director de carrera`.
 
 #### Inducción
 

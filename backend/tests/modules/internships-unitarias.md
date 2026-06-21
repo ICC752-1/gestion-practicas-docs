@@ -8,44 +8,45 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 ## Unitarias
 
-### CU-U-IN-01: Bloquear aprobación final de práctica estival sin seguro ni excepción
+### CU-U-IN-01: Bloquear aprobación final fuera de periodo regular sin seguro ni excepción
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
-- Contexto: Una práctica estival es una práctica realizada en `Verano` o `Invierno`. Crear la solicitud no autoriza el inicio ni la aprobación final; la autorización formal requiere seguro escolar o una excepción administrativa.
-- Objetivo: Evitar que el sistema apruebe formalmente una práctica estival sin cobertura registrada ni autorización excepcional.
-- Escenario: Una práctica estival intenta pasar a `Aprobada`, pero el estudiante no tiene seguro escolar vigente ni excepción administrativa.
+- Contexto: Una práctica fuera de marzo-junio o agosto-noviembre puede crearse y revisarse, pero su aprobación formal requiere seguro validado para la solicitud concreta o una excepción administrativa.
+- Objetivo: Evitar que el sistema apruebe formalmente una práctica fuera de periodo regular sin validación ni autorización excepcional.
+- Escenario: Una práctica fuera de periodo regular intenta pasar a `Aprobada`, pero la solicitud no tiene seguro validado ni excepción administrativa.
 - Variantes cubiertas:
-  - Aprobación final estival sin seguro escolar ni excepción.
-  - Aprobación final estival evaluada desde el flujo integrado de reglas de aprobación.
+  - Aprobación final fuera de periodo regular sin seguro escolar ni excepción.
+  - Aprobación final fuera de periodo regular evaluada desde el flujo integrado de reglas de aprobación.
 - Resultado esperado: La aprobación falla con `409 Conflict`; el estado de la práctica no avanza a `Aprobada`.
 - Valor de negocio: Protege al estudiante y a la institución frente a una aprobación sin cobertura válida.
 - Pruebas automatizadas:
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_seasonal_without_insurance_raises_409`
   - `tests/modules/internships/test_internship_exception.py::test_approve_seasonal_internship_raises_409_without_insurance_or_exception`
 
-### CU-U-IN-02: Permitir aprobación estival si el seguro fue regularizado antes de aprobar
+### CU-U-IN-02: Exigir validación explícita de seguro por solicitud fuera de periodo regular
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
-- Contexto: Un estudiante puede crear una solicitud de práctica estival cuando aún no tiene seguro escolar. La validación crítica se realiza al momento de aprobar, usando el requisito institucional vigente.
-- Objetivo: Confirmar que el sistema revisa el seguro escolar actualizado al momento de la aprobación final.
-- Escenario: El estudiante crea una práctica estival sin seguro. Luego un administrador regulariza el seguro escolar y se intenta aprobar la práctica.
+- Contexto: Un estudiante puede crear una solicitud fuera de periodo regular aunque aún no tenga seguro validado. La validación crítica se realiza al momento de aprobar usando `insurance_status` de la solicitud concreta.
+- Objetivo: Confirmar que el sistema no confunde el requisito institucional global con la validación explícita de la solicitud.
+- Escenario: El estudiante crea una práctica fuera de periodo regular; luego se intenta aprobar con requisito institucional global regularizado pero sin validación explícita, y después con `insurance_status=validated`.
 - Variantes cubiertas:
-  - El valor inicial `has_school_insurance=False` no bloquea si el requisito institucional vigente está completado.
-  - La aprobación actualiza la copia de compatibilidad `has_school_insurance` con el valor vigente.
-- Resultado esperado: La práctica se aprueba porque el seguro está regularizado al momento de aprobar.
-- Valor de negocio: Evita bloquear trámites válidos cuando el estudiante regulariza el requisito antes de la decisión final.
+  - El requisito institucional global completado no basta para aprobar fuera de periodo regular.
+  - `insurance_status=validated` en la solicitud concreta permite aprobar.
+- Resultado esperado: Sin validación explícita la aprobación falla con `409 Conflict`; con `insurance_status=validated`, la práctica puede quedar `Aprobada`.
+- Valor de negocio: Evita aprobaciones sin revisión de Dirección y permite continuar cuando la solicitud concreta fue validada.
 - Pruebas automatizadas:
-  - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approval_uses_current_insurance_instead_of_creation_snapshot`
+  - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approval_requires_explicit_validation_after_insurance_regularization`
+  - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approval_uses_request_level_insurance_validation`
 
-### CU-U-IN-03: Permitir avance a revisión de práctica estival sin seguro
+### CU-U-IN-03: Permitir avance a revisión fuera de periodo regular sin seguro
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
-- Contexto: La creación o revisión inicial de una práctica estival no equivale a autorización final. El seguro escolar se exige cuando la transición termina en `Aprobada`.
-- Objetivo: Evitar que el sistema bloquee prematuramente solicitudes estivales que todavía solo están en revisión.
-- Escenario: Una práctica estival en `Pendiente` avanza a `En revisión` sin seguro escolar.
+- Contexto: La creación o revisión inicial de una práctica fuera de periodo regular no equivale a autorización final. El seguro escolar se exige cuando la transición termina en `Aprobada`.
+- Objetivo: Evitar que el sistema bloquee prematuramente solicitudes fuera de periodo regular que todavía solo están en revisión.
+- Escenario: Una práctica fuera de periodo regular en `Pendiente` avanza a `En revisión` sin seguro escolar.
 - Variantes cubiertas:
   - Encargado de práctica aprueba desde `Pendiente`, generando solo avance a `En revisión`.
 - Resultado esperado: La práctica pasa a `En revisión` sin exigir seguro escolar en esa etapa.
@@ -255,7 +256,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Objetivo: Confirmar que el diagnóstico comunica bloqueos relevantes sin convertirlos en bloqueo de creación.
 - Escenario: Se consulta elegibilidad con combinaciones de seguro, inducción, Práctica I aprobada y excepciones.
 - Variantes cubiertas:
-  - Falta seguro e inducción para práctica estival de tipo I.
+  - Falta seguro e inducción para práctica fuera de periodo regular de tipo I.
   - Todos los requisitos relevantes están cumplidos.
   - Inducción cumplida mediante intento aprobado.
   - Práctica semestral no se bloquea por falta de seguro.
