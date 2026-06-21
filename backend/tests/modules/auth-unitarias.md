@@ -186,26 +186,20 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/auth/test_token_service.py::test_decode_oauth_state_token_returns_payload`
   - `tests/modules/auth/test_token_service.py::test_decode_token_raises_for_invalid_token`
 
-### CU-U-AU-10: RefreshTokenRepository persiste, revoca y valida vigencia
+### CU-U-AU-10: RefreshTokenRepository valida vigencia temporal
 
 - Tipo de prueba: Unitaria
 - Dominio: Auth
-- Contexto: Los refresh tokens persistidos permiten revocación, rotación y verificación de vigencia.
-- Objetivo: Validar operaciones básicas del repositorio y reglas de validez temporal.
-- Escenario: Se crea, consulta, revoca y evalúa vigencia de refresh tokens.
+- Contexto: Los refresh tokens persistidos deben poder evaluarse como vigentes, revocados o expirados.
+- Objetivo: Validar reglas de validez temporal del repositorio sin probar persistencia con sesiones simuladas.
+- Escenario: Se evalúa vigencia de refresh tokens activos, revocados y expirados.
 - Variantes cubiertas:
-  - Creación persiste y refresca entidad.
-  - Consulta por `jti` retorna entidad.
-  - Revocación marca `revoked_at`.
   - Token activo y no expirado es válido.
   - Token revocado no es válido.
   - Token expirado no es válido.
-- Resultado esperado: El repositorio mantiene estado de revocación y expiración correctamente.
+- Resultado esperado: El repositorio interpreta correctamente revocación y expiración.
 - Valor de negocio: Soporta cierre de sesión y refresh token rotation con persistencia revocable.
 - Pruebas automatizadas:
-  - `tests/modules/auth/test_refresh_token_repository.py::test_create_refresh_token_persists_and_refreshes_entity`
-  - `tests/modules/auth/test_refresh_token_repository.py::test_get_refresh_token_by_jti_returns_matching_entity`
-  - `tests/modules/auth/test_refresh_token_repository.py::test_revoke_refresh_token_sets_revoked_at`
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_true_for_active_unexpired_token`
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_false_for_revoked_token`
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_false_for_expired_token`
@@ -339,21 +333,3 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_rejects_unauthorized_domain`
   - `tests/modules/auth/test_google_oauth_service.py::test_exchange_authorization_code_rejects_invalid_code`
-
-### CU-U-AU-18: RoleService actualiza, asigna y remueve roles
-
-- Tipo de prueba: Unitaria
-- Dominio: Auth
-- Contexto: La administración de roles permite ajustar permisos de usuarios y descripciones de roles.
-- Objetivo: Validar operaciones básicas del service de roles.
-- Escenario: Se actualiza descripción de rol, se asigna un rol a usuario y se remueve una asignación.
-- Variantes cubiertas:
-  - Actualización de descripción.
-  - Creación de asignación usuario-rol.
-  - Remoción de asignación existente.
-- Resultado esperado: El service delega persistencia y construye asignaciones con IDs correctos.
-- Valor de negocio: Soporta gestión administrativa de permisos.
-- Pruebas automatizadas:
-  - `tests/modules/auth/test_role_service.py::test_update_role_updates_description`
-  - `tests/modules/auth/test_role_service.py::test_assign_role_creates_assignment`
-  - `tests/modules/auth/test_role_service.py::test_remove_role_delegates_to_repository`

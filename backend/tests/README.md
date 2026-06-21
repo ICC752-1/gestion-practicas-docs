@@ -46,13 +46,13 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Admin | 13 | 21 | 5 | 7 | 3 | 0 | 3 |
-| Auth | 18 | 58 | 7 | 15 | 3 | 0 | 3 |
-| Documents | 13 | 47 | 4 | 12 | 3 | 0 | 3 |
-| Internships | 24 | 97 | 3 | 6 | 2 | 0 | 2 |
+| Auth | 17 | 52 | 7 | 15 | 3 | 0 | 3 |
+| Documents | 13 | 50 | 4 | 12 | 3 | 0 | 3 |
+| Internships | 24 | 95 | 3 | 6 | 2 | 0 | 2 |
 | Notifications | 10 | 22 | 6 | 12 | 3 | 0 | 3 |
-| **Total** | **78** | **245** | **25** | **52** | **14** | **0** | **14** |
+| **Total** | **77** | **240** | **25** | **52** | **14** | **0** | **14** |
 
-En total hay 117 casos documentados y 297 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
+En total hay 116 casos documentados y 292 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
 
 ## Índice de casos de prueba
 
@@ -90,7 +90,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AU-07 | Unitaria | Auth | Logout revoca refresh token válido y tolera ausencia de token | 2 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-08 | Unitaria | Auth | Logout rechaza refresh inválido o de otro usuario | 3 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-09 | Unitaria | Auth | TokenService emite y valida claims críticos | 11 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
-| CU-U-AU-10 | Unitaria | Auth | RefreshTokenRepository persiste, revoca y valida vigencia | 6 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
+| CU-U-AU-10 | Unitaria | Auth | RefreshTokenRepository valida vigencia temporal | 3 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-11 | Unitaria | Auth | PasswordService hashea y valida contraseñas | 3 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-12 | Unitaria | Auth | RUT y teléfonos se normalizan y validan | 9 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-13 | Unitaria | Auth | Dependencia de roles permite o rechaza según autorización | 2 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
@@ -98,7 +98,6 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AU-15 | Unitaria | Auth | Google OAuth emite sesión para usuario existente | 1 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-16 | Unitaria | Auth | Google OAuth crea estudiante para dominio permitido | 1 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-17 | Unitaria | Auth | Google OAuth rechaza dominio o código inválido | 2 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
-| CU-U-AU-18 | Unitaria | Auth | RoleService actualiza, asigna y remueve roles | 3 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-I-AU-01 | Integración | Auth | `get_current_user` rechaza refresh token como Bearer | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
 | CU-I-AU-02 | Integración | Auth | `get_current_user` valida access token y usuario vigente | 5 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
 | CU-I-AU-03 | Integración | Auth | Controller de login traduce credenciales inválidas | 2 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
@@ -120,7 +119,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-DO-09 | Unitaria | Documents | Paquete DIRAE exportable requiere solicitud aprobada, práctica finalizada, expediente local listo y documentos aprobados | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-10 | Unitaria | Documents | Paquete DIRAE selecciona documentos vigentes y últimos aprobados | 5 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-11 | Unitaria | Documents | Paquete DIRAE construye datos del estudiante y controla acceso | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-12 | Unitaria | Documents | Exportación DIRAE genera CSV y auditoría estructurada | 6 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-12 | Unitaria | Documents | Exportación de expediente para DIRAE genera CSV y auditoría estructurada | 6 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-13 | Unitaria | Documents | Contrato ORM documental mantiene columnas y enums críticos | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-I-DO-01 | Integración | Documents | Descarga HTTP exige autenticación y respeta propietario | 3 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
 | CU-I-DO-02 | Integración | Documents | Controller delega operaciones documentales al service y preserva contrato | 6 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
@@ -128,7 +127,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-DO-04 | Integración | Documents | Controller propaga errores de servicio | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
 | CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
-| CU-E2E-DO-03 | End-to-end | Documents | Exportación DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
+| CU-E2E-DO-03 | End-to-end | Documents | Exportación de expediente para DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-02 | Unitaria | Internships | Exigir validación explícita de seguro por solicitud fuera de periodo regular | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión fuera de periodo regular sin seguro | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
@@ -143,13 +142,13 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-IN-12 | Unitaria | Internships | Rechazo y derivación deben exigir comentario | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-13 | Unitaria | Internships | Validar excepciones administrativas | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-14 | Unitaria | Internships | Elegibilidad de registro informa bloqueos sin impedir creación | 8 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-15 | Unitaria | Internships | Crear Práctica II no exige Práctica I aprobada | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-15 | Unitaria | Internships | Crear Práctica II no exige Práctica I aprobada | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-16 | Unitaria | Internships | Aprobación sincroniza requisito académico | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-17 | Unitaria | Internships | Creación calcula seguro escolar desde requisito institucional | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-18 | Unitaria | Internships | Dashboard normaliza estados y calcula estadísticas | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-19 | Unitaria | Internships | Edición administrativa exige motivo, rol y campos válidos | 6 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-20 | Unitaria | Internships | Anulación lógica conserva trazabilidad | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-21 | Unitaria | Internships | Contrato de creación de práctica valida payload | 11 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-21 | Unitaria | Internships | Contrato de creación de práctica valida payload | 10 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-22 | Unitaria | Internships | Contrato de excepción valida regla y motivo | 7 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-23 | Unitaria | Internships | Permisos de lectura permiten propietario o rol privilegiado | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-24 | Unitaria | Internships | Contrato ORM mantiene columnas y enums críticos | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
@@ -172,7 +171,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-NO-02 | Integración | Notifications | Usuario solo consulta detalle de notificaciones propias | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-I-NO-03 | Integración | Notifications | Controller de reintento traduce resultado operacional | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-I-NO-04 | Integración | Notifications | Endpoint legacy de envío directo traduce errores SMTP | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
-| CU-I-NO-05 | Integración | Notifications | Eventos de ciclo de práctica se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
+| CU-I-NO-05 | Integración | Notifications | Eventos de solicitud y preparación de expediente se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-I-NO-06 | Integración | Notifications | Eventos documentales se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-E2E-NO-01 | End-to-end | Notifications | Usuario consulta notificaciones generadas por una práctica | Pendiente | [`modules/notifications-end-to-end.md`](modules/notifications-end-to-end.md) |
 | CU-E2E-NO-02 | End-to-end | Notifications | Flujo documental genera notificaciones visibles para participantes | Pendiente | [`modules/notifications-end-to-end.md`](modules/notifications-end-to-end.md) |

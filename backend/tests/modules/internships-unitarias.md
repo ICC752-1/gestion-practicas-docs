@@ -287,8 +287,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Resultado esperado: La solicitud se crea en estado inicial y no se bloquea por secuencialidad.
 - Valor de negocio: Evita bloquear solicitudes tempranas que aún pueden regularizarse antes de la aprobación.
 - Pruebas automatizadas:
-  - `tests/modules/internships/test_internship_exception.py::test_create_practice_2_allowed_without_approved_practice_1`
-  - `tests/modules/internships/test_internship_exception.py::test_create_practice_2_allowed_with_active_practice_1`
+  - `tests/modules/internships/test_internship_exception.py::test_create_practice_2_does_not_apply_sequentiality_block`
 
 ### CU-U-IN-16: Aprobación sincroniza requisito académico
 
@@ -415,8 +414,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_blank_required_text`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_invalid_supervisor_email`
   - `tests/modules/internships/test_internship_schema.py::test_register_semester_ok`
-  - `tests/modules/internships/test_internship_schema.py::test_register_summer_no_insurance`
-  - `tests/modules/internships/test_internship_schema.py::test_register_summer_with_insurance`
+  - `tests/modules/internships/test_internship_schema.py::test_create_request_rejects_client_supplied_school_insurance`
 
 ### CU-U-IN-22: Contrato de excepción valida regla y motivo
 
