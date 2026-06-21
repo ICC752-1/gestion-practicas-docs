@@ -83,7 +83,8 @@ y la despacha según el modo configurado.
 | Utils | `app/modules/notifications/utils/notification_event_helpers.py` | Construye notificaciones HTML para eventos funcionales del sistema. |
 
 El módulo reutiliza configuración desde `app/core/config.py`, autenticación y roles
-desde `auth`, y es consumido por `admin`, `internships` y `documents`.
+desde `auth`, y es consumido por `admin`, `internships`, `documents`,
+`self_evaluations` y `supervisor_evaluations`.
 
 ## Funcionalidades
 
@@ -233,14 +234,18 @@ Respuesta tras intentar reenviar una notificación persistente.
 | `internships` | Solicitud de práctica aprobada. | `internship_approved` | `internship_id`. |
 | `internships` | Solicitud de práctica rechazada. | `internship_rejected` | `internship_id`, `reason`. |
 | `internships` | Expediente local preparado para trámite DIRAE. | `internship_derived` | `internship_id`, `reason`. |
+| `self_evaluations` | Autoevaluación enviada por estudiante. | `custom` | `event`, `internship_id`, `self_evaluation_id`. |
+| `supervisor_evaluations` | Invitación temporal enviada al supervisor. | `custom` | `event`, `internship_id`. |
 | `documents` | Documento cargado. | `custom` | `event`, `document_id`, `internship_id`, `document_type`. |
 | `documents` | Estado documental cambiado. | `custom` | `event`, `document_id`, `internship_id`, `new_status`, `comment`. |
 | `admin` | Estado de requisito cambiado. | `requirement_status_changed` | `requirement_id`, `requirement_type`, `new_status`, `previous_status`. |
 
 > [!IMPORTANT]
 > El enum `NotificationEventTypeEnum` no tiene valores específicos para
-> `internship_created`, `document_uploaded` ni `document_status_changed`. Esos
-> casos usan `event_type=custom` y se distinguen mediante `payload.event`.
+> `internship_created`, `self_evaluation_submitted`,
+> `supervisor_evaluation_invitation`, `document_uploaded` ni
+> `document_status_changed`. Esos casos usan `event_type=custom` y se distinguen
+> mediante `payload.event`.
 
 ## Almacenamiento y estados
 
@@ -276,6 +281,18 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 | `internship_derived` | Notifica preparación interna del expediente para trámite DIRAE. No informa estado externo de DIRAE. |
 | `requirement_status_changed` | Notifica cambio de estado de requisito. |
 | `custom` | Agrupa eventos que no tienen valor enum propio. |
+
+#### Invitación de evaluación del supervisor
+
+- El sistema genera la invitación temporal al supervisor después de que el
+  estudiante envía su autoevaluación.
+- El enlace se envía al correo snapshot del supervisor registrado en la
+  solicitud.
+- Si falla la generación o el despacho, la autoevaluación no se revierte; el
+  error queda registrado por logs y la invitación puede reenviarse desde la
+  administración.
+- La solicitud aprobada no basta para generar la invitación: debe existir
+  autoevaluación enviada.
 
 > [!NOTE]
 > El contrato actual de correo (`EmailNotificationRequest`) permite

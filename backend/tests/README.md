@@ -32,8 +32,8 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 
 | Término | Significado |
 | --- | --- |
-| Práctica estival | Práctica realizada en periodo `Verano` o `Invierno`, fuera del periodo académico regular. Para aprobación final requiere seguro escolar o excepción administrativa. |
-| Seguro escolar | Requisito institucional que indica que el estudiante tiene cobertura registrada para la práctica. |
+| Práctica fuera de periodo regular | Práctica cuyas fechas no quedan completamente dentro de marzo-junio o agosto-noviembre. Para aprobación final requiere seguro validado por solicitud o excepción administrativa. |
+| Seguro escolar | Validación institucional asociada a una solicitud concreta mediante `insurance_status`; el requisito histórico del estudiante queda como apoyo diagnóstico. |
 | Excepción administrativa | Autorización trazable que permite avanzar una práctica aunque falte una regla exceptuable. No modifica el requisito original. |
 | Estado terminal | Estado final donde una práctica no debería modificarse por acciones normales. Actualmente: `Aprobada`, `Rechazada` y `Reprobada`. |
 | Paquete documental DIRAE | Resumen local de documentos requeridos y aprobados para evaluar si una práctica puede exportarse para trámite externo en DIRAE. |
@@ -45,14 +45,14 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Admin | 13 | 20 | 5 | 6 | 3 | 0 | 3 |
+| Admin | 13 | 21 | 5 | 7 | 3 | 0 | 3 |
 | Auth | 18 | 58 | 7 | 15 | 3 | 0 | 3 |
 | Documents | 13 | 47 | 4 | 12 | 3 | 0 | 3 |
-| Internships | 24 | 96 | 3 | 6 | 2 | 0 | 2 |
+| Internships | 24 | 97 | 3 | 6 | 2 | 0 | 2 |
 | Notifications | 10 | 22 | 6 | 12 | 3 | 0 | 3 |
-| **Total** | **78** | **243** | **25** | **51** | **14** | **0** | **14** |
+| **Total** | **78** | **245** | **25** | **52** | **14** | **0** | **14** |
 
-En total hay 117 casos documentados y 294 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
+En total hay 117 casos documentados y 297 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
 
 ## Índice de casos de prueba
 
@@ -71,16 +71,16 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AD-09 | Unitaria | Admin | Actualización de requisito académico registra trazabilidad | 3 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
 | CU-U-AD-10 | Unitaria | Admin | Actualización de requisito académico emite notificación sin bloquear flujo | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
 | CU-U-AD-11 | Unitaria | Admin | Listado de requisitos institucionales del estudiante | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-12 | Unitaria | Admin | Seguro escolar se crea o actualiza correctamente | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-12 | Unitaria | Admin | Seguro escolar se valida por solicitud y mantiene requisito institucional | 3 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
 | CU-U-AD-13 | Unitaria | Admin | Seguro escolar rechaza usuarios que no son estudiantes | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-I-AD-01 | Integración | Admin | Roles autorizados para seguro escolar | 2 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
+| CU-I-AD-01 | Integración | Admin | Roles autorizados para seguro escolar | 3 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-I-AD-02 | Integración | Admin | Detalle de práctica inexistente se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-I-AD-03 | Integración | Admin | Transición inválida se traduce a 400 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-I-AD-04 | Integración | Admin | Requisito académico inexistente se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-I-AD-05 | Integración | Admin | Seguro escolar de usuario no estudiante se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-E2E-AD-01 | End-to-end | Admin | Coordinador consulta dashboard y detalle de práctica | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
 | CU-E2E-AD-02 | End-to-end | Admin | Coordinador actualiza requisito académico y estudiante recibe notificación | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
-| CU-E2E-AD-03 | End-to-end | Admin | Director registra seguro escolar y práctica estival puede aprobarse | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
+| CU-E2E-AD-03 | End-to-end | Admin | Director valida seguro escolar y práctica fuera de periodo regular puede aprobarse | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
 | CU-U-AU-01 | Unitaria | Auth | Credenciales locales válidas o incorrectas | 4 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-02 | Unitaria | Auth | Login emite tokens y persiste refresh token como hash | 1 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-03 | Unitaria | Auth | Creación de sesión para usuario emite claims y refresh persistido | 1 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
@@ -129,9 +129,9 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-03 | End-to-end | Documents | Exportación DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
-| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final de práctica estival sin seguro ni excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-02 | Unitaria | Internships | Permitir aprobación estival si el seguro fue regularizado antes de aprobar | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión de práctica estival sin seguro | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-02 | Unitaria | Internships | Exigir validación explícita de seguro por solicitud fuera de periodo regular | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión fuera de periodo regular sin seguro | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-04 | Unitaria | Internships | Bloquear Práctica I si el estudiante no aprobó la inducción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-05 | Unitaria | Internships | Permitir Práctica I con inducción aprobada | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-06 | Unitaria | Internships | Bloquear Práctica II sin Práctica I aprobada | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
@@ -157,7 +157,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-IN-02 | Integración | Internships | Tracking permite propietario y roles privilegiados | 4 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
 | CU-I-IN-03 | Integración | Internships | Dashboard rechaza rol estudiante | 1 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
 | CU-E2E-IN-01 | End-to-end | Internships | Flujo completo de Práctica I aprobada | Pendiente | [`modules/internships-end-to-end.md`](modules/internships-end-to-end.md) |
-| CU-E2E-IN-02 | End-to-end | Internships | Flujo completo de práctica estival bloqueada y luego aprobada | Pendiente | [`modules/internships-end-to-end.md`](modules/internships-end-to-end.md) |
+| CU-E2E-IN-02 | End-to-end | Internships | Flujo completo fuera de periodo regular bloqueado y luego aprobado | Pendiente | [`modules/internships-end-to-end.md`](modules/internships-end-to-end.md) |
 | CU-U-NO-01 | Unitaria | Notifications | Persistir notificaciones simuladas sin invocar SMTP | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-02 | Unitaria | Notifications | Enviar notificaciones reales y registrar resultado de entrega | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-03 | Unitaria | Notifications | Evitar envío real cuando la configuración SMTP no está lista | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
