@@ -85,7 +85,8 @@ datos mediante `app/core/database/database.py`.
 
 #### Login con email y password
 
-1. El cliente llama a `POST /auth/login` con `email` y `password`.
+1. El cliente llama a `POST /auth/login` con `application/x-www-form-urlencoded`.
+   El campo `username` corresponde al email del usuario.
 2. El controller construye `AuthService` con repositorios y servicios internos.
 3. `AuthService` busca el usuario por email.
 4. `PasswordService` valida la contraseña contra `password_hash`.
@@ -137,7 +138,8 @@ datos mediante `app/core/database/database.py`.
 6. Se intercambia el `code` por tokens de Google y se valida el `id_token`.
 7. Se exige email verificado y dominio permitido.
 8. Si el usuario no existe, se crea como `Estudiante`.
-9. Se emiten tokens internos y se redirige al callback del frontend.
+9. Se emiten tokens internos, se guarda el refresh token en cookie `HttpOnly` y
+   se redirige al callback del frontend con el access token.
 
 #### Administración de usuarios
 
@@ -181,13 +183,14 @@ datos mediante `app/core/database/database.py`.
 <details>
 <summary><strong>LoginRequest</strong></summary>
 
-Payload usado por `POST /auth/login`.
+Payload usado por `POST /auth/login`. Este endpoint no recibe JSON; usa
+`OAuth2PasswordRequestForm`.
 
-```json
-{
-  "email": "student@correo.cl",
-  "password": "my_secure_password"
-}
+```text
+Content-Type: application/x-www-form-urlencoded
+
+username=student@correo.cl
+password=my_secure_password
 ```
 
 </details>
@@ -428,6 +431,18 @@ sistema.
 - Por defecto permite `ufromail.cl` y `ufrontera.cl`.
 - Si el usuario no existe, lo crea con rol `Estudiante`.
 - El RUT de usuarios creados por Google usa formato sintético `google:<hash>`.
+- Si el login es exitoso, el callback redirige a
+  `GOOGLE_FRONTEND_SUCCESS_URL?token=<access_token>` y configura la cookie
+  `REFRESH_TOKEN_COOKIE_NAME` como `HttpOnly`.
+- Si el login falla, redirige a `GOOGLE_FRONTEND_ERROR_URL?error=<codigo>`.
+
+**Códigos de error esperados por frontend:**
+
+- `unauthorized_domain`
+- `invalid_callback`
+- `missing_token`
+- `server_unavailable`
+- `user_not_found`
 
 #### Administración de usuarios
 
@@ -467,12 +482,17 @@ sistema.
 | `GOOGLE_FRONTEND_ERROR_URL` | URL frontend a la que se redirigen errores de login Google. |
 | `GOOGLE_STATE_EXPIRE_MINUTES` | Vigencia del token `state` usado en OAuth. |
 | `GOOGLE_STATE_COOKIE_NAME` | Nombre de la cookie HTTP-only usada para validar `state`. |
+| `REFRESH_TOKEN_COOKIE_NAME` | Nombre de la cookie HTTP-only usada para refresh/logout OAuth. |
 | `GOOGLE_COOKIE_SECURE` | Controla si la cookie OAuth exige HTTPS. |
 
 ## Consideraciones operativas
 
-- `/auth/login`, `/auth/refresh` y `/auth/logout` usan JSON body.
-- `OAuth2PasswordBearer(tokenUrl="auth/login")` define el esquema Bearer para FastAPI, pero el login no usa form OAuth2.
+- `/auth/login` usa `application/x-www-form-urlencoded` con `username` y
+  `password`.
+- `/auth/refresh` y `/auth/logout` aceptan JSON body; en el flujo OAuth también
+  pueden usar la cookie `HttpOnly` configurada para el refresh token.
+- `OAuth2PasswordBearer(tokenUrl="auth/login")` define el esquema Bearer para
+  FastAPI y el login usa `OAuth2PasswordRequestForm`.
 - `JWT_SECRET_KEY` debe configurarse en entornos reales.
 - `GOOGLE_COOKIE_SECURE=True` debe usarse cuando el callback OAuth opere sobre HTTPS.
 - `init.sql` siembra roles base y asigna usuario 1 como `Estudiante` y usuario 2 como `Director de carrera`.

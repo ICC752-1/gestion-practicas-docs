@@ -148,5 +148,5 @@ El despliegue vigente quedó verificado con:
 ## Limitaciones y próximos pasos
 
 - El flujo Google OAuth aún debe cerrarse funcionalmente a nivel de aplicación; la infraestructura ya provee el origen HTTPS público requerido.
-- Conviene migrar las GitHub Actions a versiones compatibles con Node.js 24 antes de que GitHub retire Node.js 20 de los runners.
+- Conviene actualizar las GitHub Actions a versiones compatibles con Node.js 24 antes de que GitHub retire Node.js 20 de los runners.
 - Las alertas Dependabot y advertencias lint existentes deben tratarse como deuda de seguimiento, no como parte de la operación base del CI/CD.

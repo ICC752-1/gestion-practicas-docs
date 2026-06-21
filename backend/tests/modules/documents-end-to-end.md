@@ -36,13 +36,13 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - Pendiente de implementación.
 
-### CU-E2E-DO-03: Exportación DIRAE de práctica aprobada con documentos completos
+### CU-E2E-DO-03: Exportación de expediente para DIRAE de práctica finalizada con documentos completos
 
 - Tipo de prueba: End-to-end
 - Dominio: Documents / Internships
-- Contexto: La exportación DIRAE depende de estado de práctica y documentos requeridos aprobados.
-- Objetivo: Validar el flujo completo desde práctica aprobada y documentos aprobados hasta CSV exportable.
-- Escenario: Práctica aprobada tiene documentos requeridos aprobados; rol documental exporta paquetes DIRAE.
+- Contexto: La exportación del expediente para trámite DIRAE depende de solicitud aprobada, práctica finalizada, expediente local listo y documentos requeridos aprobados.
+- Objetivo: Validar el flujo completo desde solicitud aprobada, cierre de práctica y documentos aprobados hasta CSV exportable.
+- Escenario: Práctica finalizada con solicitud aprobada, expediente local listo y documentos requeridos aprobados; rol documental exporta paquetes para trámite externo en DIRAE.
 - Variantes cubiertas:
   - Flujo completo pendiente de automatización.
 - Resultado esperado: El CSV contiene la práctica, IDs de documentos aprobados y datos del estudiante.

@@ -271,7 +271,8 @@ cuando `status=observed`.
 <details>
 <summary><strong>DocumentPackageResponse</strong></summary>
 
-Resume el estado documental de una práctica y si puede exportarse a DIRAE.
+Resume el estado documental de una práctica y si su expediente local puede
+exportarse para trámite externo en DIRAE.
 
 ```json
 {
@@ -424,17 +425,25 @@ de resolverla contra `DOCUMENT_STORAGE_DIR`.
 
 #### Paquete documental DIRAE
 
-Un paquete es exportable cuando cumple ambas condiciones:
+Un paquete es exportable cuando cumple estas condiciones:
 
-- La práctica está en estado `Aprobada`.
+- La solicitud de práctica está en estado `Aprobada`.
+- La práctica está cerrada con `completion_status=finalized`.
+- El expediente documental local está preparado para exportación. En la
+  implementación actual se representa con la marca técnica `dirae_status=ready`,
+  sin implicar estado externo en DIRAE.
 - Todos los tipos documentales requeridos tienen un documento `approved` vigente.
 
 Razones de no exportabilidad:
 
 | Razón | Significado |
 | --- | --- |
-| `internship_not_approved` | La práctica no está en estado `Aprobada`. |
+| `internship_not_approved` | La solicitud de práctica no está en estado `Aprobada`. |
+| `practice_not_finalized` | La práctica aún no está cerrada/finalizada. |
+| `dirae_not_ready` | El expediente local todavía no está listo para exportación. |
 | `missing_required_documents` | Falta al menos un documento requerido aprobado. |
+| `observed_documents_pending` | Existe al menos un documento observado pendiente de corrección. |
+| `sensitive_document_restricted` | El actor no tiene permiso para incluir documentos sensibles en el paquete. |
 
 Para cada tipo documental, el paquete selecciona el último documento aprobado
 según `upload_date` y luego `id`. Documentos `uploaded`, `observed`, `deleted` o
@@ -447,6 +456,9 @@ con `deleted_at` no se consideran aprobados para el paquete.
 - Sin `internship_ids`, se exportan solo las prácticas exportables disponibles.
 - Sin paquetes exportables, el CSV puede contener solo encabezado.
 - El service construye un evento `dirae_export_generated` como dato de auditoría de la exportación.
+- El contrato actual solo genera descarga CSV. No envía correo con archivo
+  adjunto; para soportarlo habría que extender el módulo `notifications` con
+  adjuntos, destinatario institucional configurable y auditoría de envío.
 
 ## Configuración por entorno
 

@@ -96,10 +96,14 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 2. El controller exige rol `Estudiante`.
 3. El service obtiene el estado `Pendiente` desde `currentstate`.
 4. El backend calcula `has_school_insurance` desde `StudentRegistrationRequirement`.
-5. Se persiste la práctica asociada al usuario autenticado.
-6. Se registra una entrada inicial en `InternshipStatusHistory`.
-7. Se intenta notificar a `Encargado de practica` y `Director de carrera`.
-8. Se retorna `InternshipResponse`.
+5. Se valida que el estudiante tenga inducción aprobada para poder crear la solicitud.
+6. Se valida que no exista otra solicitud bloqueante del mismo `internship_type`.
+7. Se persiste la práctica asociada al usuario autenticado con
+   `blocks_new_registration=true`, `completion_status=not_started` y
+   `final_result=pending`.
+8. Se registra una entrada inicial en `InternshipStatusHistory`.
+9. Se intenta notificar a `Encargado de practica` y `Director de carrera`.
+10. Se retorna `InternshipResponse`.
 
 #### Dashboard de revisión
 
@@ -136,13 +140,16 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 
 1. El usuario llama a `GET /internships/registration-eligibility`.
 2. Opcionalmente envía `internship_period` e `internship_type`.
-3. El service evalúa seguro escolar, inducción, práctica previa aprobada y excepciones existentes.
-4. Se retorna un diagnóstico con `blocked` y `next_step`.
+3. El service evalúa seguro escolar, inducción, práctica previa aprobada,
+   excepciones existentes y solicitudes bloqueantes del mismo tipo.
+4. Se retorna un diagnóstico con `blocked`, `can_create_request` y `next_step`.
 
 > [!IMPORTANT]
-> La elegibilidad guía al frontend y al estudiante, pero no impide por sí misma
-> crear una solicitud pendiente. Los bloqueos relevantes se aplican durante el
-> avance administrativo.
+> La elegibilidad guía al frontend y al estudiante, pero el backend mantiene la
+> validación autoritativa en `POST /internships`. Si `has_induction=false` o
+> `can_create_request=false`, el frontend debe impedir el acceso al formulario o
+> el envío de la solicitud, y el backend responderá error si se intenta forzar el
+> flujo por API.
 
 #### Aprobación administrativa
 
@@ -156,14 +163,21 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 8. Si queda `Aprobada`, se sincroniza `StudentInternshipRequirement`.
 9. Se intenta notificar al estudiante.
 
-#### Rechazo y derivación
+#### Rechazo y preparación documental para DIRAE
 
 1. Un actor autorizado llama a `POST /internships/{internship_id}/reject` o `POST /internships/{internship_id}/derive`.
 2. El service valida el permiso de acción.
 3. Se exige comentario no vacío.
-4. Se rechazan prácticas inexistentes o en estado terminal.
-5. Se cambia el estado a `Rechazada` o `En revisión DIRAE`.
-6. Se registra historial y se intenta notificar al estudiante.
+4. Se rechazan prácticas inexistentes.
+5. El rechazo cambia el estado administrativo de la solicitud a `Rechazada` y
+   libera `blocks_new_registration`.
+6. La preparación documental no aprueba ni rechaza la solicitud; actualiza una
+   marca técnica interna del expediente local (`dirae_status`) para habilitar
+   revisión, rectificación y exportación.
+7. La preparación documental para DIRAE exige solicitud en estado `Aprobada` y práctica con
+   `completion_status=finalized`.
+8. Se registra historial interno y se intenta notificar al estudiante. Este
+   historial no representa seguimiento del trámite externo en DIRAE.
 
 #### Excepciones administrativas
 
@@ -199,11 +213,16 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 | GET | `/internships/registration-eligibility` | Retorna diagnóstico de requisitos y siguiente paso. | Bearer token |
 | GET | `/internships/{internship_id}` | Obtiene detalle de una práctica. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/tracking` | Lista historial cronológico de estados. | Propietario o rol privilegiado |
+| GET | `/internships/{internship_id}/dirae-tracking` | Lista historial interno de preparación/exportación del expediente local. No consulta estado externo en DIRAE. | Propietario o rol privilegiado |
+| GET | `/internships/{internship_id}/student-actions` | Indica acciones disponibles para el estudiante. | Estudiante propietario |
+| PATCH | `/internships/{internship_id}/student` | Permite corrección acotada por estudiante cuando el estado lo permite. | Estudiante propietario |
+| POST | `/internships/{internship_id}/student/cancel` | Anula una solicitud propia con motivo. | Estudiante propietario |
 | PATCH | `/internships/{internship_id}/admin` | Corrige campos editables con trazabilidad. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/cancel` | Anula lógicamente una práctica. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/approve` | Avanza o aprueba una práctica. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
 | POST | `/internships/{internship_id}/reject` | Rechaza una práctica con motivo obligatorio. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
-| POST | `/internships/{internship_id}/derive` | Deriva una práctica a revisión DIRAE. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
+| POST | `/internships/{internship_id}/derive` | Inicia preparación/revisión local del expediente para exportación, sin cambiar `currentstate`. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
+| POST | `/internships/{internship_id}/dirae-reopen` | Reabre el expediente local para rectificación documental previa a una nueva exportación. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
 | POST | `/internships/{internship_id}/exceptions` | Registra excepción administrativa. | Encargado de practica, Director de carrera |
 | GET | `/internships/{internship_id}/exceptions` | Lista excepciones de una práctica. | Propietario o rol privilegiado |
 
@@ -287,12 +306,56 @@ administrativo.
 {
   "has_school_insurance": false,
   "has_induction": true,
+  "requires_retake": false,
   "has_school_insurance_exception": false,
   "has_approved_practice_1": true,
   "sequentiality_blocked": false,
   "has_sequentiality_exception": false,
+  "has_blocking_internship": false,
+  "blocking_internship_id": null,
+  "blocking_internship_status": null,
+  "can_create_request": true,
   "blocked": true,
   "next_step": "Debe registrar el seguro escolar ante la unidad correspondiente o contar con una excepción antes de aprobar la práctica estival."
+}
+```
+
+</details>
+
+<details>
+<summary><strong>InductionResponse</strong></summary>
+
+`GET /internships/induction` retorna la versión publicada activa. Las opciones
+de cada pregunta se exponen como objeto estable `{clave: texto}` y el frontend
+debe enviar la clave seleccionada, no el texto visible.
+
+```json
+{
+  "id": 1,
+  "title": "Inducción obligatoria",
+  "requires_retake": false,
+  "min_score": 1,
+  "questions": [
+    {
+      "id": 1,
+      "question_text": "Confirma que revisaste la inducción obligatoria antes de tramitar tu práctica.",
+      "options": {
+        "accept": "Entiendo y acepto",
+        "reject": "No acepto"
+      },
+      "order": 1
+    }
+  ]
+}
+```
+
+`POST /internships/induction/attempts`:
+
+```json
+{
+  "answers": {
+    "1": "accept"
+  }
 }
 ```
 
@@ -342,10 +405,24 @@ Entrada cronológica del historial de estados o acciones administrativas.
 | --- | --- |
 | `Pendiente` | Estado inicial de una solicitud registrada. |
 | `En revisión` | Revisión administrativa previa a aprobación final. |
-| `En revisión DIRAE` | Revisión derivada a DIRAE. |
 | `Aprobada` | Estado terminal exitoso. |
 | `Rechazada` | Estado terminal de rechazo. |
 | `Reprobada` | Estado histórico tratado como rechazo en dashboard y terminalidad. |
+
+#### Estados de ejecución y cierre
+
+Además del estado administrativo de la solicitud, `Internship` expone campos
+para el ciclo posterior de ejecución/cierre:
+
+| Campo | Valores | Uso |
+| --- | --- | --- |
+| `completion_status` | `not_started`, `in_progress`, `pending_evaluations`, `pending_presentation`, `finalized` | Estado de ejecución/cierre posterior a la aprobación administrativa. |
+| `final_result` | `pending`, `passed`, `failed` | Resultado final consolidado de la práctica. |
+| `dirae_status` | `not_started`, `in_review`, `observed`, `ready`, `exported` | Marca técnica interna del expediente local para preparación, rectificación y exportación. No representa el estado externo del trámite en DIRAE. |
+
+Estos campos no sustituyen a `currentstate`: `Aprobada` y `Rechazada` siguen
+representando el resultado administrativo de la solicitud. El cierre final de
+la práctica debe usar `completion_status` y `final_result`.
 
 #### Estados normalizados para dashboard
 
@@ -356,20 +433,45 @@ Entrada cronológica del historial de estados o acciones administrativas.
 | `approved` | `Aprobada`. |
 | `rejected` | `Rechazada`, `Reprobada`. |
 
-> [!WARNING]
-> En el código actual, `En revisión DIRAE` no está incluido en el mapa de estados
-> del dashboard y cae en `submitted` por defecto. Si el dashboard debe mostrarlo
-> como revisión, hay que actualizar `STATUS_LABEL_TO_DASHBOARD_STATUS`.
+> [!NOTE]
+> `En revisión DIRAE` no debe tratarse como estado administrativo nuevo de la
+> solicitud ni como seguimiento externo del trámite en DIRAE. En el modelo
+> actual esa preparación local se representa con `dirae_status=in_review` y
+> conserva `currentstate=Aprobada`.
+
+#### Duplicidad por tipo de práctica
+
+`POST /internships` impide crear otra solicitud vigente para el mismo
+`user_id + internship_type` cuando existe una práctica con
+`blocks_new_registration=true`.
+
+El backend responde `409 Conflict` con `code=duplicate_internship_type` e
+incluye `existing_internship_id`, `internship_type`, `existing_status` y
+`message`. La elegibilidad preventiva expone `has_blocking_internship`,
+`blocking_internship_id`, `blocking_internship_status` y `can_create_request`.
+
+El bloqueo se libera al rechazar o anular la solicitud. La liberación por
+`final_result=failed` pertenece al flujo de cierre final y no debe asumirse como
+operativa hasta que ese flujo actualice explícitamente `blocks_new_registration`.
 
 #### Transiciones permitidas
 
 | Estado origen | Estados destino permitidos |
 | --- | --- |
-| `Pendiente` | `En revisión`, `En revisión DIRAE`, `Aprobada`, `Rechazada`. |
-| `En revisión` | `Aprobada`, `Rechazada`, `En revisión DIRAE`. |
-| `En revisión DIRAE` | `Aprobada`, `Rechazada`. |
+| `Pendiente` | `En revisión`, `Aprobada`, `Rechazada`. |
+| `En revisión` | `Aprobada`, `Rechazada`. |
 | `Aprobada` | Ninguno. |
 | `Rechazada` | Ninguno. |
+
+La preparación local del expediente se expresa por transiciones internas de
+`dirae_status`:
+
+| Marca interna origen | Marca interna destino permitido | Condición |
+| --- | --- | --- |
+| `not_started` | `in_review` | Solicitud `Aprobada` y `completion_status=finalized`. |
+| `in_review` | `observed`, `ready` | Revisión documental local. |
+| `observed` | `in_review` | Rectificación documental. |
+| `ready` | `exported` | Exportación CSV generada correctamente. No confirma recepción externa. |
 
 #### Permisos de acción
 
@@ -428,6 +530,11 @@ puede permitir aprobar sin excepción.
 La inducción se considera cumplida si existe un prerrequisito institucional
 `induction` completado o un intento aprobado en `InductionAttempt`. El contenido
 visible para estudiantes debe estar publicado y activo.
+
+Si la versión activa tiene `requires_retake=true`, una inducción histórica deja
+de ser suficiente y debe existir un intento aprobado para esa versión activa.
+La creación de solicitudes por estudiante requiere inducción aprobada; si falta,
+`POST /internships` responde `409 Conflict` con `code=induction_required`.
 
 #### Sincronización académica
 

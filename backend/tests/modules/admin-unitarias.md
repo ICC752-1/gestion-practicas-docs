@@ -63,7 +63,8 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Escenario: Se filtra una lista de prácticas por `submitted`, `in_review` y `approved`.
 - Variantes cubiertas:
   - `submitted` incluye `Pendiente` y prácticas sin estado.
-  - `in_review` incluye `En revisión` y `En revisión DIRAE`.
+  - `in_review` incluye `En revisión`; `En revisión DIRAE` solo se acepta como
+    compatibilidad con registros legacy, no como estado funcional nuevo.
   - `approved` incluye `Aprobada`.
 - Resultado esperado: Cada filtro retorna solo las prácticas esperadas.
 - Valor de negocio: Protege las bandejas de trabajo del coordinador y evita mezclar trámites en estados incorrectos.

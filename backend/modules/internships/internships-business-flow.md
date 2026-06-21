@@ -163,6 +163,94 @@ institucional permanece incompleto.
 
 ---
 
+## RN-01-B: Una solicitud bloqueante por estudiante y tipo de práctica
+
+### Descripción
+
+Un estudiante no puede mantener más de una solicitud vigente para el mismo
+`internship_type`. La regla evita duplicidad funcional y protege también
+peticiones concurrentes desde dos pestañas o clientes distintos.
+
+### Definición de la regla
+
+Bloquean nuevas solicitudes del mismo tipo las prácticas con
+`blocks_new_registration = true`. En el comportamiento actual esto incluye
+solicitudes en `Pendiente`, `En revisión` y `Aprobada`. Si existen registros
+legacy con `currentstate=En revisión DIRAE`, también deben considerarse
+bloqueantes hasta normalizarlos al modelo separado `dirae_status`.
+
+El bloqueo se libera cuando la solicitud es `Rechazada` o anulada lógicamente
+con `is_cancelled = true`. Los campos `completion_status` y `final_result`
+existen para representar el cierre posterior de la práctica, pero la liberación
+automática por `final_result=failed` debe quedar implementada por el flujo de
+cierre antes de tratarla como comportamiento operativo.
+
+### Garantía persistente
+
+La persistencia impide duplicar solicitudes activas para el mismo
+`user_id + internship_type` mientras `blocks_new_registration` sea verdadero.
+La consulta previa del servicio mejora el mensaje de error, pero la invariante
+no depende solo del frontend ni de una lectura preventiva.
+
+### Contrato de error
+
+`POST /internships` responde `409 Conflict` cuando ya existe una solicitud
+bloqueante:
+
+```json
+{
+  "detail": {
+    "code": "duplicate_internship_type",
+    "existing_internship_id": 15,
+    "internship_type": "Práctica de Estudio I",
+    "existing_status": "Pendiente",
+    "message": "Ya existe una solicitud vigente para este tipo de práctica. Revisa el registro existente antes de crear una nueva solicitud."
+  }
+}
+```
+
+`GET /internships/registration-eligibility` expone el diagnóstico preventivo
+con `has_blocking_internship`, `blocking_internship_id`,
+`blocking_internship_status` y `can_create_request`.
+
+---
+
+## RN-01-C: Agenda de entrevistas y presentaciones sin doble reserva
+
+### Descripción
+
+La agenda institucional usa `Presentation` como fuente única para representar
+bloques publicados, reservas de entrevista inicial y reservas de presentación
+final. No se deben mantener horarios reales solo en estado local del frontend.
+
+### Definición de la regla
+
+- Los roles `Encargado de practica` y `Director de carrera` pueden publicar
+  disponibilidad futura asociada a su propio usuario.
+- Cada bloque contiene fecha, hora inicial, hora final, duración, modalidad,
+  ubicación/enlace, zona horaria, propietario y propósito.
+- Un estudiante solo puede reservar un bloque `available` para una práctica
+  propia y no anulada.
+- Una práctica no puede tener dos citas activas para el mismo propósito.
+- Un estudiante no puede mantener citas solapadas.
+- Un administrativo no puede publicar disponibilidad que se solape con otro
+  bloque activo propio.
+- Un bloque pasado no puede reservarse ni cerrarse desde la API.
+
+### Garantía de concurrencia
+
+La reserva toma el bloque con bloqueo de fila y vuelve a validar que siga en
+estado `available` antes de asignar `user_id`, `internship_id`, `reserved_at` y
+`status=scheduled`.
+
+### Cancelación y reprogramación
+
+El estudiante propietario puede cancelar o reprogramar su cita. Un rol
+administrativo solo puede cancelar o cerrar bloques propios; cuando cancela una
+cita ya agendada debe entregar motivo.
+
+---
+
 ## RN-02: Matriz de Transiciones de Estados y Permisología por Rol
 
 ### Descripción
@@ -184,10 +272,15 @@ El flujo de evaluación de una solicitud de práctica está diseñado bajo un mo
 | `Pendiente` | `Rechazada` | `reject` | **Sí** | **Sí** | No |
 | `En revisión` | `Aprobada` | `approve` | **Sí** | **Sí** | No |
 | `En revisión` | `Rechazada` | `reject` | **Sí** | **Sí** | No |
-| `Pendiente` o `En revisión` | `En revisión DIRAE` | `derive` | Según regla documental | Según regla documental | **Sí** |
+| `Aprobada` + `completion_status=finalized` | Expediente interno en preparación | `derive` | Según regla documental | Según regla documental | **Sí** |
 
 > [!WARNING]
-> **Criterio de Restricción Terminal:** Los estados `Aprobada`, `Rechazada` y `Reprobada (Legacy)` son estrictamente **terminales**. Cualquier intento de aplicar una acción administrativa sobre ellos gatillará un rechazo inmediato por consistencia de datos (`409 Conflict`).
+> **Criterio de Restricción Terminal:** Los estados administrativos `Aprobada`,
+> `Rechazada` y `Reprobada (Legacy)` son terminales para resolver la solicitud.
+> La preparación DIRAE no cambia `currentstate`; solo inicia el expediente local
+> cuando la solicitud ya está aprobada y la práctica ya fue finalizada. En la
+> implementación actual esa preparación usa `dirae_status` como marca técnica
+> interna, no como seguimiento del trámite externo en DIRAE.
 
 ---
 
@@ -197,15 +290,20 @@ El flujo de evaluación de una solicitud de práctica está diseñado bajo un mo
 
 Un estudiante no puede avanzar la **Práctica de Estudio II** mediante `approve()` mientras su **Práctica de Estudio I** no se encuentre aprobada. La creación de la Práctica II (`create_internship`) no está sujeta a esta restricción.
 
-La **Práctica de Estudio I** exige inducción obligatoria aprobada antes de la
-aprobación administrativa. Esta regla es inexceptuable: no puede resolverse con
-una excepción administrativa.
+La inducción obligatoria aprobada habilita la creación de solicitudes desde el
+flujo estudiante. Además, la **Práctica de Estudio I** exige inducción aprobada
+antes de la aprobación administrativa. Esta regla es inexceptuable: no puede
+resolverse con una excepción administrativa.
 
 ### Definición de la Regla
 
-- La validación se aplica **exclusivamente al momento de aprobación** (`approve`), no a la creación inicial de la solicitud (`create_internship`).
+- `create_internship` responde `409 Conflict` con `code=induction_required` si
+  el estudiante no tiene inducción aprobada.
 - Si la práctica en aprobación es de tipo `Práctica de Estudio I`, el sistema verifica que el estudiante tenga inducción aprobada en `student_registration_requirements` o un intento aprobado en `induction_attempts`.
 - Si no existe inducción aprobada para Práctica I, se bloquea el avance con `409 Conflict`.
+- Una inducción histórica aprobada sigue siendo válida salvo que la versión
+  activa tenga `requires_retake=true`; en ese caso debe existir un intento
+  aprobado para la versión activa.
 - Si la práctica en aprobación es de tipo `Práctica de Estudio II`, el sistema verifica que el estudiante tenga al menos una `Práctica de Estudio I` con estado `Aprobada`.
 - Si no existe dicha práctica I aprobada, se bloquea el avance con `409 Conflict`.
 - El bloqueo puede omitirse mediante una excepción administrativa de tipo `"sequentiality"`.
@@ -355,13 +453,17 @@ consultarlo, revisarlo o eliminarlo.
 3. **Separación funcional de Secretaría:** Secretaría puede gestionar documentos
    y preparar el flujo documental, pero no obtiene por esta regla permisos para
    aprobar o rechazar la práctica.
-4. **Bloqueo por estado terminal:** No se permite cargar documentos nuevos si la
-   práctica está `Aprobada`, `Rechazada` o `Reprobada`.
-5. **Corrección documental:** Se permite cargar documentos en `Pendiente`,
-   `En revisión` y `En revisión DIRAE`.
-6. **Eliminación lógica:** Los documentos no se borran de la base de datos. La
+4. **Bloqueo por estado terminal:** El estudiante no puede cargar documentos
+   nuevos si la solicitud está `Aprobada`, `Rechazada` o `Reprobada`.
+5. **Corrección documental posterior:** Si la solicitud está `Aprobada`, el
+   estudiante solo puede subir correcciones para tipos documentales previamente
+   observados. Secretaría puede cargar documentos administrativos no sensibles
+   asociados al expediente de una solicitud aprobada.
+6. **Carga antes de resolver solicitud:** Se permite carga documental ordinaria
+   mientras la solicitud permanece en `Pendiente` o `En revisión`.
+7. **Eliminación lógica:** Los documentos no se borran de la base de datos. La
    eliminación registra `deleted_at`, `deleted_by` y estado `deleted`.
-7. **Documento aprobado:** Un estudiante no puede eliminar un documento aprobado;
+8. **Documento aprobado:** Un estudiante no puede eliminar un documento aprobado;
    un rol documental autorizado sí puede marcarlo como eliminado.
 
 ### Matriz de Permisología Documental
@@ -478,49 +580,70 @@ Sin una excepción activa para la regla `parallel_course`, el sistema bloquea co
 - En produccion VPS, el storage documental debe montarse como volumen persistente
   privado y no debe exponerse como contenido estatico por Nginx.
 
-Para la politica operacional completa revisar `docs/modules/documents/documents-storage-privacy.md`.
+Para la politica operacional completa revisar `backend/modules/documents/documents-storage-privacy.md`.
 
 ---
 
-## RN-04: Exportación DIRAE posterior a la aprobación administrativa
+## RN-07: Exportación de expediente para DIRAE posterior al cierre de la práctica
 
 ### Descripción
 
-La exportación DIRAE consolida prácticas ya aprobadas y con documentación
-mínima validada. El paquete documental es una vista calculada sobre prácticas,
+La plataforma prepara y exporta la documentación de prácticas cuya solicitud ya
+fue aprobada, cuya ejecución ya fue finalizada y cuyo expediente documental fue
+validado. El paquete documental es una vista calculada sobre prácticas,
 estudiantes, tipos documentales y documentos aprobados; no representa una etapa
-obligatoria para resolver la solicitud de práctica.
+obligatoria para resolver la solicitud de práctica ni un seguimiento del proceso
+externo de DIRAE.
+
+DIRAE opera fuera de la plataforma. Después de exportar o enviar los antecedentes,
+el avance oficial debe verificarse en la plataforma institucional externa que
+corresponda, por ejemplo la ficha curricular visible en intranet para el
+estudiante.
 
 ### Definición de la Regla
 
-1. **Aprobación previa:** Una práctica solo puede ser exportable a DIRAE cuando
-   su estado actual es `Aprobada`.
-2. **Documentación requerida:** Todos los tipos documentales activos marcados
+1. **Aprobación administrativa previa:** Una práctica solo puede preparar su
+   expediente para DIRAE cuando la solicitud de práctica está en estado
+   `Aprobada`.
+2. **Cierre de la práctica:** La exportación DIRAE ocurre después de la
+   ejecución, evaluaciones, presentación y confirmación de finalización. Por lo
+   tanto, `completion_status` debe ser `finalized`.
+3. **Expediente local listo para exportar:** El expediente local debe estar
+   preparado antes de exportar. En la implementación actual esto se representa
+   técnicamente con `dirae_status=ready`, pero ese campo no representa el estado
+   real del proceso externo en DIRAE.
+4. **Documentación requerida:** Todos los tipos documentales activos marcados
    como requeridos deben tener al menos un documento `approved` no eliminado.
-3. **Documento vigente por tipo:** Si existen varios documentos aprobados para
+5. **Documento vigente por tipo:** Si existen varios documentos aprobados para
    un mismo tipo, se selecciona el más reciente por `upload_date DESC, id DESC`.
-4. **DIRAE no bloquea la aprobación:** El flujo DIRAE ocurre después de la
-   aprobación administrativa. No es un estado previo obligatorio para aprobar
-   o rechazar una práctica.
-5. **Roles autorizados:** `Encargado de practica`, `Director de carrera` y
+6. **Sin seguimiento externo:** La plataforma no registra estados posteriores de
+   DIRAE. Solo deja trazabilidad de la preparación/exportación local del
+   expediente.
+7. **Roles autorizados:** `Encargado de practica`, `Director de carrera` y
    `Secretaria de Carrera` pueden consultar paquetes documentales y exportar
    CSV DIRAE.
-6. **Matrícula derivada:** La matrícula institucional se calcula como RUT sin
+8. **Matrícula derivada:** La matrícula institucional se calcula como RUT sin
    puntos ni guion más los dos últimos dígitos del año de ingreso cuando ese dato
    está disponible. Si el año de ingreso no existe en el modelo actual, el campo
    queda vacío o `null`.
-7. **Sin persistencia de lote MVP:** La exportación se genera dinámicamente y no
+9. **Salida soportada actualmente:** La exportación se genera como CSV
+   descargable. El envío por correo con archivo adjunto no está soportado por el
+   contrato actual de notificaciones; podría agregarse después si el módulo de
+   email incorpora adjuntos, destinatarios institucionales configurables y
+   auditoría del envío.
+10. **Sin persistencia de lote MVP:** La exportación se genera dinámicamente y no
    crea lotes persistidos en esta versión.
-8. **Evento auditable definido:** La exportación deja definido el evento
+11. **Evento auditable definido:** La exportación deja definido el evento
    `dirae_export_generated` con actor, fecha, prácticas, documentos, archivo y
-   resultado para integrarlo con la auditoría funcional cuando 11.5 esté
-   disponible.
+   resultado local para integrarlo con la auditoría funcional cuando 11.5 esté
+   disponible. Este evento no confirma recepción ni procesamiento por DIRAE.
 
 ### Resultado Técnico
 
 - `GET /internships/{internship_id}/documents/package` retorna
-  `exportable = false` con razones estables si la práctica no está aprobada o
-  faltan documentos requeridos.
+  `exportable = false` con razones estables si la solicitud no está aprobada,
+  la práctica no está finalizada, el expediente local no está listo para
+  exportar o faltan documentos requeridos.
 - `GET /dirae/document-packages/export` retorna CSV `text/csv`. Cuando se
   solicitan IDs explícitos, una práctica inexistente responde `404` y una
   práctica no exportable responde `409`.

@@ -77,20 +77,20 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/notifications/test_notification_controller.py::TestSendNotification::test_send_notification_returns_400_when_mailer_is_not_configured`
   - `tests/modules/notifications/test_notification_controller.py::TestSendNotification::test_send_notification_returns_500_on_unexpected_smtp_error`
 
-### CU-I-NO-05: Eventos de ciclo de práctica se persisten en modo simulado
+### CU-I-NO-05: Eventos de solicitud y preparación de expediente se persisten en modo simulado
 
 - Tipo de prueba: Integración
 - Dominio: Notifications / Internships
-- Contexto: Las acciones sobre prácticas generan notificaciones para seguimiento administrativo y comunicación al estudiante.
+- Contexto: Las acciones sobre solicitudes de práctica y preparación local del expediente para DIRAE generan notificaciones para comunicación interna y al estudiante.
 - Objetivo: Validar que el flujo real de servicios produce y persiste eventos esperados sin SMTP real.
-- Escenario: Se crea una práctica y luego se aprueba, rechaza y deriva usando servicios de dominio con repositorio de notificaciones en memoria.
+- Escenario: Se crea una solicitud de práctica y luego se aprueba, rechaza y prepara su expediente local usando servicios de dominio con repositorio de notificaciones en memoria.
 - Variantes cubiertas:
-  - Práctica creada genera evento `internship_created` como `custom`.
-  - Aprobación genera `internship_approved`.
-  - Rechazo conserva motivo en payload.
-  - Derivación conserva motivo DIRAE en payload.
+  - Solicitud de práctica creada genera evento `internship_created` como `custom`.
+  - Aprobación de solicitud genera `internship_approved`.
+  - Rechazo de solicitud conserva motivo en payload.
+  - Preparación del expediente local conserva motivo en payload.
 - Resultado esperado: Todas las notificaciones se persisten con estado `simulated` y payload funcional correcto.
-- Valor de negocio: Protege la comunicación asociada al ciclo de vida principal de prácticas.
+- Valor de negocio: Protege la comunicación asociada al ciclo administrativo de solicitudes y a la preparación local del expediente que luego se tramita externamente.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_event_integration.py::test_internship_lifecycle_events_are_persisted_in_simulated_mode`
 

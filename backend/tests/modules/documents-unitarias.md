@@ -158,24 +158,30 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/documents/test_document_service.py::test_owner_can_delete_non_approved_document`
   - `tests/modules/documents/test_document_service.py::test_admin_can_soft_delete_approved_document`
 
-### CU-U-DO-09: Paquete DIRAE exportable requiere práctica aprobada y documentos requeridos aprobados
+### CU-U-DO-09: Paquete DIRAE exportable requiere solicitud aprobada, práctica finalizada, expediente local listo y documentos aprobados
 
 - Tipo de prueba: Unitaria
 - Dominio: Documents
-- Contexto: El paquete documental resume si una práctica puede exportarse a DIRAE.
+- Contexto: El paquete documental resume si el expediente de una práctica puede exportarse para trámite externo en DIRAE.
 - Objetivo: Validar condiciones de exportabilidad y razones cuando no se cumplen.
-- Escenario: Se construye paquete con práctica aprobada, práctica no aprobada y documentos requeridos faltantes.
+- Escenario: Se construye paquete con solicitud aprobada, práctica finalizada, expediente local listo, solicitud no aprobada, práctica no finalizada, expediente local no listo y documentos requeridos faltantes.
 - Variantes cubiertas:
-  - Práctica aprobada con documentos requeridos aprobados es exportable.
-  - Práctica no aprobada no es exportable.
+  - Solicitud aprobada con práctica finalizada, expediente local listo y documentos requeridos aprobados es exportable.
+  - Solicitud no aprobada no es exportable.
+  - Práctica no finalizada no es exportable.
+  - Expediente local no listo no es exportable.
   - Documento requerido faltante no es exportable.
+  - Documento observado pendiente no es exportable.
   - Múltiples tipos requeridos deben estar aprobados.
-- Resultado esperado: `exportable` y `reasons` reflejan reglas DIRAE.
-- Valor de negocio: Evita exportar trámites incompletos o no aprobados.
+- Resultado esperado: `exportable` y `reasons` reflejan reglas de preparación/exportación local del expediente.
+- Valor de negocio: Evita exportar solicitudes no aprobadas, prácticas no cerradas o expedientes incompletos.
 - Pruebas automatizadas:
   - `tests/modules/documents/test_document_service.py::test_package_is_exportable_with_approved_internship_and_docs`
   - `tests/modules/documents/test_document_service.py::test_package_not_exportable_when_internship_is_not_approved`
+  - `tests/modules/documents/test_document_service.py::test_package_not_exportable_when_practice_is_not_finalized`
+  - `tests/modules/documents/test_document_service.py::test_package_not_exportable_when_dirae_status_is_not_ready`
   - `tests/modules/documents/test_document_service.py::test_package_not_exportable_when_required_document_missing`
+  - `tests/modules/documents/test_document_service.py::test_package_not_exportable_when_observed_documents_are_pending`
   - `tests/modules/documents/test_document_service.py::test_package_requires_all_required_document_types`
 
 ### CU-U-DO-10: Paquete DIRAE selecciona documentos vigentes y últimos aprobados
@@ -220,11 +226,11 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/documents/test_document_service.py::test_package_access_allows_owner_and_document_admin`
   - `tests/modules/documents/test_document_service.py::test_package_access_rejects_cross_student`
 
-### CU-U-DO-12: Exportación DIRAE genera CSV y auditoría estructurada
+### CU-U-DO-12: Exportación de expediente para DIRAE genera CSV y auditoría estructurada
 
 - Tipo de prueba: Unitaria
 - Dominio: Documents
-- Contexto: Roles documentales pueden exportar paquetes documentales DIRAE en CSV.
+- Contexto: Roles documentales pueden exportar paquetes documentales en CSV para trámite externo en DIRAE.
 - Objetivo: Validar autorización, contenido CSV, auditoría y errores para solicitudes específicas.
 - Escenario: Se exportan paquetes con IDs explícitos o sin filtro.
 - Variantes cubiertas:
@@ -235,7 +241,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Sin IDs y sin exportables retorna solo encabezado.
   - Sin IDs exporta solo paquetes exportables e ignora no exportables.
 - Resultado esperado: El CSV contiene solo paquetes válidos y el evento de auditoría conserva actor, prácticas y documentos aprobados.
-- Valor de negocio: Protege la entrega formal de antecedentes a DIRAE.
+- Valor de negocio: Protege la generación local del archivo institucional que se entregará a DIRAE por los canales definidos fuera de la plataforma.
 - Pruebas automatizadas:
   - `tests/modules/documents/test_document_service.py::test_export_dirae_csv_authorized`
   - `tests/modules/documents/test_document_service.py::test_export_dirae_csv_rejects_non_document_admin`
@@ -248,7 +254,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Documents
-- Contexto: El proyecto no usa Alembic; los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial.
+- Contexto: Los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial definido en `init.sql`.
 - Objetivo: Detectar cambios accidentales en tablas, columnas, flags y enums documentales.
 - Escenario: Se inspeccionan modelos `Document` y `DocumentType`.
 - Variantes cubiertas:

@@ -76,11 +76,11 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Dominio: Notifications
 - Contexto: Los módulos productores construyen notificaciones mediante helpers. El frontend, auditoría y diagnóstico dependen de `event_type`, destinatario y `payload` estables.
 - Objetivo: Validar que los helpers de eventos críticos construyen notificaciones con datos mínimos esperados.
-- Escenario: Se generan notificaciones para aprobación, rechazo, derivación y cambio de requisito.
+- Escenario: Se generan notificaciones para aprobación, rechazo, preparación de expediente y cambio de requisito.
 - Variantes cubiertas:
   - Aprobación de práctica conserva `event_type`, destinatario y `internship_id`.
   - Rechazo de práctica conserva motivo en payload.
-  - Derivación conserva motivo DIRAE en payload.
+  - Preparación local del expediente conserva motivo en payload.
   - Cambio de requisito conserva requisito, estado nuevo y estado anterior.
 - Resultado esperado: Las notificaciones generadas mantienen contratos de ruteo y metadata funcional.
 - Valor de negocio: Evita romper consumidores internos que interpretan notificaciones por tipo y payload.
@@ -160,7 +160,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: El proyecto no usa Alembic; los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial.
+- Contexto: Los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial definido en `init.sql`.
 - Objetivo: Detectar cambios accidentales en tabla, columnas o enums usados por el módulo.
 - Escenario: Se inspeccionan el modelo `Notification` y enums de evento y estado.
 - Variantes cubiertas:

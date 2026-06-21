@@ -170,7 +170,7 @@ Representa una práctica en _listados administrativos_.
   "status": {
     "id": 2,
     "title": "En revisión",
-    "description": "La práctica fue registrada y se encuentra en revisión administrativa."
+    "description": "La solicitud de práctica fue registrada y se encuentra en revisión administrativa."
   }
 }
 ```
@@ -217,7 +217,7 @@ Representa un **prerrequisito institucional** del estudiante.
 | Query | Estados incluidos |
 | --- | --- |
 | `submitted` | Sin estado o `Pendiente`. |
-| `in_review` | `En revisión`, `En revisión DIRAE`. |
+| `in_review` | `En revisión`. Registros legacy con `En revisión DIRAE` pueden mapearse aquí solo por compatibilidad histórica; el flujo actual no debe usarlo como estado funcional. |
 | `approved` | `Aprobada`. |
 | `rejected` | `Rechazada`, `Reprobada`. |
 

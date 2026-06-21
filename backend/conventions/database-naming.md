@@ -1,4 +1,4 @@
-<h1 align="center"><em>Convención y Plan de Nombres BD/ORM</em></h1>
+<h1 align="center"><em>Convención de Nombres BD/ORM</em></h1>
 
 Fecha: 09/06/2026
 
@@ -12,13 +12,15 @@ Fecha: 09/06/2026
 - [Enums PostgreSQL](#enums-postgresql)
 - [Impacto por archivo](#impacto-por-archivo)
 - [Estrategia de implementación](#estrategia-de-implementación)
-- [Migración mínima](#migración-mínima)
 - [Riesgos](#riesgos)
 - [Checklist para nuevos modelos](#checklist-para-nuevos-modelos)
 
 ## Alcance
 
-La base no tiene un entorno productivo real que deba conservar datos históricos. Por eso la opción preferida para implementar el cambio es normalizar el esquema desde `init.sql`, actualizar los modelos SQLAlchemy y recrear las bases locales o de prueba desde cero. Si más adelante existe un volumen con datos valiosos, se debe usar una migración explícita antes de aplicar estos cambios.
+La base no tiene un entorno productivo real que deba conservar datos históricos.
+Por eso la opción preferida para implementar cambios de esquema es normalizar
+directamente `init.sql`, actualizar los modelos SQLAlchemy y recrear las bases
+locales o de prueba desde cero.
 
 ## Convención objetivo
 
@@ -75,7 +77,7 @@ La decisión evita identificadores PostgreSQL citados y sensibles a mayúsculas.
 | `app/core/database/init.sql` | Renombrar tablas, referencias, triggers, funciones y tipos enum. |
 | `app/modules/*/models/*.py` | Alinear `__tablename__`, `ForeignKey(...)` y nombres `PGEnum`. |
 | `tests/modules/*` | Agregar o ajustar pruebas de contrato para validar nombres de tablas, FKs y enums. |
-| `docs/conventions/development-standards.md` | Mantener la regla de nombres como fuente de verdad para futuros modelos. |
+| `backend/conventions/development-standards.md` | Mantener la regla de nombres como fuente de verdad para futuros modelos. |
 
 ## Estrategia de implementación
 
@@ -88,29 +90,13 @@ La decisión evita identificadores PostgreSQL citados y sensibles a mayúsculas.
    - tablas declaradas en SQLAlchemy;
    - nombres esperados por `init.sql`;
    - nombres de enum usados por columnas ORM.
-7. Recrear la base local y de CI desde cero, porque no hay producción real que migrar.
+7. Recrear la base local y de CI desde cero, porque no hay producción real con datos que preservar.
 8. Ejecutar `uv run ruff check .` y `uv run pytest --tb=short`.
-
-## Migración mínima
-
-Ruta preferida mientras no exista producción real:
-
-1. Detener los servicios locales.
-2. Eliminar solo el volumen local de PostgreSQL asociado al entorno de desarrollo.
-3. Levantar de nuevo el stack para que `init.sql` cree el esquema normalizado.
-4. Reseed con los datos mínimos del propio `init.sql`.
-
-Ruta alternativa si se deben preservar datos:
-
-1. Respaldar la base.
-2. Aplicar `ALTER TABLE ... RENAME TO ...` para tablas.
-3. Aplicar `ALTER TYPE ... RENAME TO ...` para enums.
-4. Actualizar funciones y triggers en la misma migración.
-5. Validar con consultas de conteo y pruebas de API.
 
 ## Riesgos
 
-- El proyecto no tiene Alembic u otra capa de migraciones. Si se aplica el cambio sobre una base con datos existentes, `init.sql` no actualizará el volumen ya inicializado.
+- Si se aplica un cambio de esquema sin recrear la base local, `init.sql` no
+  actualizará un volumen ya inicializado.
 - Los triggers de auditoría dependen de nombres de tabla; deben cambiar junto con las tablas o fallarán en tiempo de ejecución.
 - Cambiar valores de enum visibles en API, como roles o tipos de práctica, puede romper frontend y pruebas funcionales. Ese cambio queda fuera de este plan.
 - Los módulos `documents`, `presentation` y `log_actions` aún no tienen modelos completos, por lo que conviene normalizar los nombres antes de implementarlos.
@@ -121,5 +107,6 @@ Ruta alternativa si se deben preservar datos:
 - Toda `ForeignKey` usa el nombre físico real de la tabla.
 - Todo `PGEnum(..., name=...)` usa `enum_<domain>` en `lower_snake_case`.
 - No se introducen identificadores SQL citados por mayúsculas.
-- Si el cambio altera esquema existente, se crea migración o se documenta el reinicio de base local.
+- Si el cambio altera esquema existente, se actualiza `init.sql` y se recrea la
+  base local o de prueba desde cero.
 - Las pruebas incluyen al menos una aserción de contrato sobre tabla, FK o enum.

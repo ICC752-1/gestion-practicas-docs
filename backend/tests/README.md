@@ -36,8 +36,8 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Seguro escolar | Requisito institucional que indica que el estudiante tiene cobertura registrada para la práctica. |
 | Excepción administrativa | Autorización trazable que permite avanzar una práctica aunque falte una regla exceptuable. No modifica el requisito original. |
 | Estado terminal | Estado final donde una práctica no debería modificarse por acciones normales. Actualmente: `Aprobada`, `Rechazada` y `Reprobada`. |
-| Paquete documental DIRAE | Resumen de documentos requeridos y aprobados para evaluar si una práctica puede exportarse o tramitarse hacia DIRAE. |
-| Exportable | Condición que indica que la práctica está aprobada y tiene todos los documentos requeridos aprobados para ser incluida en la exportación DIRAE. |
+| Paquete documental DIRAE | Resumen local de documentos requeridos y aprobados para evaluar si una práctica puede exportarse para trámite externo en DIRAE. |
+| Exportable | Condición que indica que la solicitud está aprobada, la práctica está finalizada, el expediente local está listo y los documentos requeridos están aprobados para generar la exportación. |
 | Inducción | Requisito obligatorio para tramitar la aprobación de `Práctica de Estudio I`. |
 | Secuencialidad | Regla académica que exige aprobar una práctica previa antes de aprobar una posterior, por ejemplo Práctica I antes de Práctica II. |
 
@@ -117,7 +117,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-DO-06 | Unitaria | Documents | Descarga rechaza archivos inexistentes, eliminados o paths inseguros | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-07 | Unitaria | Documents | Revisión documental respeta roles, estados y comentario obligatorio | 5 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-08 | Unitaria | Documents | Eliminación lógica respeta propietario, roles y estado aprobado | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-09 | Unitaria | Documents | Paquete DIRAE exportable requiere práctica aprobada y documentos requeridos aprobados | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-09 | Unitaria | Documents | Paquete DIRAE exportable requiere solicitud aprobada, práctica finalizada, expediente local listo y documentos aprobados | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-10 | Unitaria | Documents | Paquete DIRAE selecciona documentos vigentes y últimos aprobados | 5 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-11 | Unitaria | Documents | Paquete DIRAE construye datos del estudiante y controla acceso | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-12 | Unitaria | Documents | Exportación DIRAE genera CSV y auditoría estructurada | 6 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
@@ -128,7 +128,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-DO-04 | Integración | Documents | Controller propaga errores de servicio | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
 | CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
-| CU-E2E-DO-03 | End-to-end | Documents | Exportación DIRAE de práctica aprobada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
+| CU-E2E-DO-03 | End-to-end | Documents | Exportación DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final de práctica estival sin seguro ni excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-02 | Unitaria | Internships | Permitir aprobación estival si el seguro fue regularizado antes de aprobar | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión de práctica estival sin seguro | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |

@@ -158,7 +158,7 @@ Representa una notificación en el listado del usuario autenticado.
 {
   "id": 10,
   "event_type": "internship_approved",
-  "subject": "Práctica aprobada",
+  "subject": "Solicitud de práctica aprobada",
   "status": "simulated",
   "created_at": "2026-06-16T12:00:00Z",
   "sent_at": null
@@ -178,7 +178,7 @@ Representa el detalle de una notificación propia.
   "recipient_user_id": 5,
   "recipient_email": "student@ufromail.cl",
   "event_type": "internship_rejected",
-  "subject": "Práctica rechazada",
+  "subject": "Solicitud de práctica rechazada",
   "content": "<html>...</html>",
   "status": "simulated",
   "payload": {
@@ -229,10 +229,10 @@ Respuesta tras intentar reenviar una notificación persistente.
 
 | Productor | Evento funcional | `event_type` | Payload principal |
 | --- | --- | --- | --- |
-| `internships` | Práctica creada. | `custom` | `event`, `internship_id`, `student_user_id`. |
-| `internships` | Práctica aprobada. | `internship_approved` | `internship_id`. |
-| `internships` | Práctica rechazada. | `internship_rejected` | `internship_id`, `reason`. |
-| `internships` | Práctica derivada. | `internship_derived` | `internship_id`, `reason`. |
+| `internships` | Solicitud de práctica creada. | `custom` | `event`, `internship_id`, `student_user_id`. |
+| `internships` | Solicitud de práctica aprobada. | `internship_approved` | `internship_id`. |
+| `internships` | Solicitud de práctica rechazada. | `internship_rejected` | `internship_id`, `reason`. |
+| `internships` | Expediente local preparado para trámite DIRAE. | `internship_derived` | `internship_id`, `reason`. |
 | `documents` | Documento cargado. | `custom` | `event`, `document_id`, `internship_id`, `document_type`. |
 | `documents` | Estado documental cambiado. | `custom` | `event`, `document_id`, `internship_id`, `new_status`, `comment`. |
 | `admin` | Estado de requisito cambiado. | `requirement_status_changed` | `requirement_id`, `requirement_type`, `new_status`, `previous_status`. |
@@ -271,11 +271,18 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 
 | `event_type` | Uso |
 | --- | --- |
-| `internship_approved` | Notifica aprobación de práctica. |
-| `internship_rejected` | Notifica rechazo de práctica. |
-| `internship_derived` | Notifica derivación de práctica a DIRAE. |
+| `internship_approved` | Notifica aprobación de solicitud de práctica. |
+| `internship_rejected` | Notifica rechazo de solicitud de práctica. |
+| `internship_derived` | Notifica preparación interna del expediente para trámite DIRAE. No informa estado externo de DIRAE. |
 | `requirement_status_changed` | Notifica cambio de estado de requisito. |
 | `custom` | Agrupa eventos que no tienen valor enum propio. |
+
+> [!NOTE]
+> El contrato actual de correo (`EmailNotificationRequest`) permite
+> destinatarios, asunto y cuerpo HTML. No define archivos adjuntos. Por lo tanto,
+> el envío automático del expediente DIRAE por correo con CSV/PDF adjunto no es
+> una funcionalidad disponible todavía; requeriría extender el schema, el service
+> SMTP, la configuración de destinatarios y la auditoría del envío.
 
 ## Reglas de negocio
 

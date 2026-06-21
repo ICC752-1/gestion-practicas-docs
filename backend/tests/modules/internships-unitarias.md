@@ -169,7 +169,8 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Director de carrera aprueba desde `Pendiente` y avanza directo a `Aprobada`.
   - Encargado aprueba con `skip_review=True` y avanza a `Aprobada`.
   - Actor autorizado aprueba desde `En revisión`.
-  - Actor autorizado aprueba desde `En revisión DIRAE`.
+  - Actor autorizado aprueba desde `En revisión DIRAE` solo como cobertura
+    legacy; el flujo actual no debe generar ese estado como fase de DIRAE.
 - Resultado esperado: Cada transición produce el estado definido por la matriz de negocio.
 - Valor de negocio: Preserva la trazabilidad del flujo regular y la facultad de aprobación directa cuando corresponde.
 - Pruebas automatizadas:
@@ -463,7 +464,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
-- Contexto: El proyecto no usa Alembic; los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial.
+- Contexto: Los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial definido en `init.sql`.
 - Objetivo: Detectar cambios accidentales en columnas, enums o nombres físicos usados por el módulo.
 - Escenario: Se inspeccionan modelos `Internship` e `InternshipStatusHistory`.
 - Variantes cubiertas:
@@ -472,7 +473,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Enum de modalidad coincide con contrato de base de datos.
   - Modelo de historial conserva tabla y columnas esperadas.
 - Resultado esperado: El contrato ORM conserva nombres y valores críticos.
-- Valor de negocio: Reduce riesgo de desalineación entre modelos, SQL y tests al no existir migraciones.
+- Valor de negocio: Reduce riesgo de desalineación entre modelos, SQL y tests al mantener el esquema desde `init.sql`.
 - Pruebas automatizadas:
   - `tests/modules/internships/test_internship_model.py::test_upload_date_default_matches_database_timezone_naive_timestamp`
   - `tests/modules/internships/test_internship_model.py::test_internship_model_includes_supervisor_snapshot_columns`
