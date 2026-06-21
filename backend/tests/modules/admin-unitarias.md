@@ -183,20 +183,22 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - `tests/modules/admin/test_admin_service.py::test_get_student_registration_requirements_returns_institutional_data`
 
-### CU-U-AD-12: Seguro escolar se crea o actualiza correctamente
+### CU-U-AD-12: Seguro escolar se valida por solicitud y mantiene requisito institucional
 
 - Tipo de prueba: Unitaria
 - Dominio: Admin
-- Contexto: El seguro escolar es un prerrequisito institucional usado para aprobar prácticas estivales.
-- Objetivo: Confirmar que el service crea el requisito si no existe y limpia la fecha de completitud cuando se revoca.
-- Escenario: Un administrador marca seguro escolar como completado y luego se prueba revocación de un requisito existente.
+- Contexto: El seguro escolar que condiciona aprobación se valida por solicitud concreta; el requisito institucional histórico sigue existiendo como dato de apoyo.
+- Objetivo: Confirmar que el service actualiza `insurance_status` de una solicitud y mantiene correctamente el requisito institucional del estudiante.
+- Escenario: Dirección valida el seguro de una solicitud; además crea o revoca el requisito institucional histórico.
 - Variantes cubiertas:
+  - Solicitud concreta queda `validated`, con usuario validador y notas.
   - Requisito faltante se crea como `school_insurance` completado.
   - Al revocar, `is_completed=false` y `completed_at=None`.
   - Se registra `updated_by`.
-- Resultado esperado: El requisito refleja correctamente la cobertura vigente.
-- Valor de negocio: Protege una regla institucional crítica para prácticas de temporada.
+- Resultado esperado: La solicitud refleja correctamente su validación propia y el requisito institucional conserva trazabilidad.
+- Valor de negocio: Protege una regla institucional crítica sin confundir validación por solicitud con dato global del estudiante.
 - Pruebas automatizadas:
+  - `tests/modules/admin/test_admin_service.py::test_update_internship_school_insurance_validates_request`
   - `tests/modules/admin/test_admin_service.py::test_update_school_insurance_creates_missing_requirement`
   - `tests/modules/admin/test_admin_service.py::test_update_school_insurance_clears_completion_when_revoked`
 

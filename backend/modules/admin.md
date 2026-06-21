@@ -29,7 +29,10 @@ requisitos asociados al proceso de práctica.
 - Listar y consultar prácticas desde una vista administrativa.
 - Revisar requisitos académicos de práctica por estudiante.
 - Actualizar el estado de requisitos de práctica.
-- Registrar el cumplimiento institucional del seguro escolar.
+- Registrar y consultar validaciones de seguro escolar por solicitud de
+  práctica.
+- Mantener el requisito institucional histórico de seguro escolar del
+  estudiante.
 
 ## Ámbito y responsabilidades
 
@@ -42,7 +45,8 @@ No es el dueño del flujo completo de **creación** ni **aprobación** de práct
 - Consulta administrativa de estudiantes.
 - Consulta administrativa de prácticas.
 - Gestión de requisitos académicos de práctica.
-- Gestión del prerrequisito institucional de seguro escolar.
+- Gestión de seguro escolar por solicitud concreta.
+- Gestión del prerrequisito institucional histórico de seguro escolar.
 
 #### Fuera de alcance
 
@@ -73,7 +77,8 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 #### Consulta del dashboard administrativo
 
 1. El cliente llama a `GET /admin/summary`.
-2. El controller exige autenticación y rol `Encargado de practica`.
+2. El controller exige autenticación y rol `Encargado de practica` o
+   `Director de carrera`.
 3. El service solicita agregaciones al repository.
 4. El repository calcula totales y conteos por estado.
 5. Se retorna `AdminSummaryResponse`.
@@ -90,7 +95,8 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 #### Actualización de requisito académico
 
 1. El cliente llama a `PATCH /admin/students/{student_id}/internship-requirements/{requirement_id}/status`.
-2. El controller valida autenticación y rol `Encargado de practica`.
+2. El controller valida autenticación y rol `Encargado de practica` o
+   `Director de carrera`.
 3. El service verifica que el requisito exista y pertenezca al estudiante.
 4. Se valida la transición de estado.
 5. Se actualizan `status`, `status_updated_at` y `status_updated_by`.
@@ -98,12 +104,27 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 
 #### Registro de seguro escolar
 
+1. El cliente llama a `PATCH /admin/internships/{internship_id}/school-insurance`.
+2. El controller permite solo `Director de carrera`.
+3. El service verifica que la solicitud exista.
+4. Se actualiza `insurance_status`, `insurance_validated_by`,
+   `insurance_validated_at`, `insurance_notes` y la compatibilidad
+   `has_school_insurance`.
+5. Se retorna `AdminInternshipDetailResponse`.
+
+#### Registro institucional histórico de seguro escolar
+
 1. El cliente llama a `PATCH /admin/students/{student_id}/registration-requirements/school-insurance`.
-2. El controller permite `Encargado de practica` y `Director de carrera`.
+2. El controller permite solo `Director de carrera`.
 3. El service verifica que el usuario exista y tenga rol `Estudiante`.
 4. Se crea o actualiza el requisito `school_insurance`.
 5. Si `is_completed=false`, se limpia `completed_at`.
 6. Se retorna `AdminRegistrationRequirementItem`.
+
+> [!NOTE]
+> Este requisito institucional histórico sirve como dato diagnóstico y de
+> compatibilidad. Para aprobar solicitudes fuera del periodo regular, la fuente
+> autoritativa es `insurance_status` de la solicitud concreta.
 
 ## Endpoints disponibles
 
@@ -111,14 +132,15 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 
 | Método | Ruta | Propósito | Rol |
 | --- | --- | --- | --- |
-| GET | `/admin/summary` | Resumen global del sistema. | Encargado de practica |
-| GET | `/admin/students` | Listado administrativo de estudiantes. | Encargado de practica |
-| GET | `/admin/internships` | Listado administrativo de prácticas. | Encargado de practica |
-| GET | `/admin/internships/{internship_id}` | Detalle administrativo de una práctica. | Encargado de practica |
-| GET | `/admin/students/{student_id}/internship-requirements` | Lista requisitos académicos del estudiante. | Encargado de practica |
-| PATCH | `/admin/students/{student_id}/internship-requirements/{requirement_id}/status` | Actualiza estado de requisito académico. | Encargado de practica |
-| GET | `/admin/students/{student_id}/registration-requirements` | Lista prerrequisitos institucionales. | Encargado de practica, Director de carrera |
-| PATCH | `/admin/students/{student_id}/registration-requirements/school-insurance` | Crea o actualiza seguro escolar. | Encargado de practica, Director de carrera |
+| GET | `/admin/summary` | Resumen global del sistema. | Encargado de practica, Director de carrera |
+| GET | `/admin/students` | Listado administrativo de estudiantes. | Encargado de practica, Director de carrera |
+| GET | `/admin/internships` | Listado administrativo de prácticas. | Encargado de practica, Director de carrera |
+| GET | `/admin/internships/{internship_id}` | Detalle administrativo de una práctica. | Encargado de practica, Director de carrera |
+| PATCH | `/admin/internships/{internship_id}/school-insurance` | Valida o marca el seguro escolar de una solicitud concreta. | Director de carrera |
+| GET | `/admin/students/{student_id}/internship-requirements` | Lista requisitos académicos del estudiante. | Encargado de practica, Director de carrera |
+| PATCH | `/admin/students/{student_id}/internship-requirements/{requirement_id}/status` | Actualiza estado de requisito académico. | Encargado de practica, Director de carrera |
+| GET | `/admin/students/{student_id}/registration-requirements` | Lista prerrequisitos institucionales. | Director de carrera |
+| PATCH | `/admin/students/{student_id}/registration-requirements/school-insurance` | Crea o actualiza seguro escolar institucional histórico. | Director de carrera |
 
 ## Contratos principales
 
@@ -165,7 +187,9 @@ Representa una práctica en _listados administrativos_.
     "email": "student@correo.cl",
     "first_name": "Juan",
     "last_name": "Pérez",
-    "rut": "12.345.678-9"
+    "rut": "12.345.678-9",
+    "degree": "Ingeniería Civil Informática",
+    "cod_degree": "ICI"
   },
   "status": {
     "id": 2,
@@ -174,6 +198,24 @@ Representa una práctica en _listados administrativos_.
   }
 }
 ```
+
+</details>
+
+<details>
+<summary><strong>AdminUpdateInternshipSchoolInsuranceRequest</strong></summary>
+
+Request usado por Dirección de carrera para validar el seguro de una solicitud
+concreta.
+
+```json
+{
+  "status": "validated",
+  "notes": "Validado por Dirección de carrera para esta solicitud."
+}
+```
+
+Estados aceptados: `pending`, `validated`, `requires_exception`,
+`not_applicable`.
 
 </details>
 
@@ -244,9 +286,31 @@ Representa un **prerrequisito institucional** del estudiante.
 > [!WARNING]
 > Las transiciones inválidas retornan error `400`.
 
-#### Seguro escolar
+#### Seguro escolar por solicitud
 
-El **seguro escolar** se maneja como _prerrequisito institucional booleano_.
+El seguro escolar que condiciona la aprobación se maneja por solicitud concreta
+mediante `insurance_status`.
+
+| Valor | Significado |
+| --- | --- |
+| `pending` | Pendiente de validación. |
+| `validated` | Validado para la solicitud concreta. |
+| `requires_exception` | Requiere regularización o excepción. |
+| `not_applicable` | No aplica para la solicitud. |
+
+**Reglas actuales:**
+
+- Solo `Director de carrera` puede actualizar el seguro por solicitud.
+- Las solicitudes dentro de marzo-junio o agosto-noviembre pueden quedar
+  validadas automáticamente por backend.
+- Las solicitudes fuera de esos rangos requieren validación explícita o
+  excepción `school_insurance` antes de llegar a `Aprobada`.
+- No bloquea la creación de una solicitud en estado `Pendiente`.
+
+#### Seguro escolar institucional histórico
+
+El requisito institucional de seguro escolar del estudiante se maneja como
+booleano de apoyo diagnóstico.
 
 | Valor | Significado |
 | --- | --- |
@@ -259,14 +323,16 @@ El **seguro escolar** se maneja como _prerrequisito institucional booleano_.
 - Si no existe, se crea.
 - Si existe, se actualiza.
 - Al enviar `false`, se limpia `completed_at`.
-- Solo bloquea aprobación final de prácticas `Verano` o `Invierno`.
-- No bloquea la creación de una solicitud en estado `Pendiente`.
+- No sustituye `insurance_status` de una solicitud concreta fuera del periodo
+  regular.
 
 ## Consideraciones operativas
 
 - Todos los endpoints exigen autenticación.
 - Los endpoints generales del módulo requieren rol `Encargado de practica`.
-- Los endpoints de seguro escolar también aceptan `Director de carrera`.
+- Los endpoints de lectura administrativa de prácticas también aceptan
+  `Director de carrera`.
+- Los endpoints de seguro escolar requieren `Director de carrera`.
 - El cambio de estado de requisito registra `status_updated_at` y `status_updated_by`.
 - Si el requisito académico no existe para el estudiante indicado, se retorna `404`.
 - El `PATCH` de seguro escolar retorna `404` si el usuario no existe o no tiene rol `Estudiante`.

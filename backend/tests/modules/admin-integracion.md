@@ -12,17 +12,18 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Integración
 - Dominio: Admin
-- Contexto: La gestión de seguro escolar está disponible para roles administrativos específicos.
-- Objetivo: Validar que la dependencia de roles permite a `Encargado de practica` y `Director de carrera`, y rechaza a estudiantes.
+- Contexto: La gestión de seguro escolar queda bajo responsabilidad de `Director de carrera`.
+- Objetivo: Validar que la dependencia de roles permite a `Director de carrera` y rechaza a `Encargado de practica` y estudiantes.
 - Escenario: Usuarios con distintos roles intentan pasar la dependencia de autorización.
 - Variantes cubiertas:
-  - `Encargado de practica` autorizado.
   - `Director de carrera` autorizado.
+  - `Encargado de practica` rechazado con `403`.
   - `Estudiante` rechazado con `403`.
-- Resultado esperado: Solo roles administrativos habilitados pasan la validación.
-- Valor de negocio: Evita que estudiantes modifiquen su propio seguro escolar institucional.
+- Resultado esperado: Solo Dirección de carrera pasa la validación.
+- Valor de negocio: Evita que estudiantes o coordinación modifiquen una validación que corresponde a Dirección.
 - Pruebas automatizadas:
-  - `tests/modules/admin/test_admin_router.py::test_school_insurance_admin_roles_are_authorized`
+  - `tests/modules/admin/test_admin_router.py::test_school_insurance_director_role_is_authorized`
+  - `tests/modules/admin/test_admin_router.py::test_school_insurance_coordinator_role_is_rejected`
   - `tests/modules/admin/test_admin_router.py::test_school_insurance_student_role_is_rejected`
 
 ### CU-I-AD-02: Detalle de práctica inexistente se traduce a 404

@@ -36,16 +36,16 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - Pendiente de implementación.
 
-### CU-E2E-AD-03: Director registra seguro escolar y práctica estival puede aprobarse
+### CU-E2E-AD-03: Director valida seguro escolar y práctica fuera de periodo regular puede aprobarse
 
 - Tipo de prueba: End-to-end
 - Dominio: Admin / Internships
-- Contexto: El seguro escolar registrado desde `admin` condiciona la aprobación final de prácticas estivales en `internships`.
-- Objetivo: Validar que la regularización institucional del seguro se refleja en el flujo completo de aprobación.
-- Escenario: Una práctica estival inicialmente bloqueada por falta de seguro es regularizada por un rol autorizado; luego se aprueba.
+- Contexto: El seguro escolar validado por Dirección para una solicitud concreta condiciona la aprobación final de prácticas fuera del periodo regular.
+- Objetivo: Validar que la regularización por solicitud se refleja en el flujo completo de aprobación.
+- Escenario: Una práctica fuera de periodo regular inicialmente bloqueada por falta de seguro es validada por Dirección; luego se aprueba.
 - Variantes cubiertas:
   - Flujo completo pendiente de automatización.
-- Resultado esperado: Antes del seguro, la aprobación falla; después de registrarlo, la práctica puede aprobarse si cumple el resto de reglas.
+- Resultado esperado: Antes de la validación, la aprobación falla; después de marcar `insurance_status=validated`, la práctica puede aprobarse si cumple el resto de reglas.
 - Valor de negocio: Protege una regla institucional crítica atravesando módulos.
 - Pruebas automatizadas:
   - Pendiente de implementación.
