@@ -20,9 +20,12 @@
 
 ## Resumen operativo
 
-El tracking disponible en el backend corresponde al **historial cronológico de una
-práctica**. Su objetivo es mostrar cómo ha cambiado el estado funcional de la
-solicitud y qué actor ejecutó o disparó cada cambio.
+El tracking disponible en el backend tiene dos vistas complementarias:
+
+- **Historial cronológico administrativo:** muestra cómo ha cambiado el estado
+  funcional de la solicitud y qué actor ejecutó o disparó cada cambio.
+- **Seguimiento agregado de ciclo de vida:** resume solicitud, ejecución,
+  autoevaluación, evaluación del supervisor, presentación final y cierre.
 
 **Permite:**
 
@@ -32,6 +35,8 @@ solicitud y qué actor ejecutó o disparó cada cambio.
 - Ver el motivo funcional registrado.
 - Ver metadata auxiliar de la acción administrativa.
 - Reconstruir la secuencia funcional de revisión de una práctica.
+- Consultar avance funcional agregado para dashboards de estudiante y
+  administración.
 
 > [!IMPORTANT]
 > Este tracking es trazabilidad funcional del flujo de prácticas. No reemplaza la
@@ -46,9 +51,13 @@ schemas, modelos, tests propios ni router registrado para `tracking`.
 La implementación real vive en `internships`:
 
 - Endpoint: `GET /internships/{internship_id}/tracking`.
+- Endpoint: `GET /internships/{internship_id}/lifecycle-tracking`.
 - Modelo: `InternshipStatusHistory`.
-- Schema de respuesta: `InternshipTrackingResponse`.
-- Persistencia: tabla `internship_status_history`.
+- Schemas de respuesta: `InternshipTrackingResponse`,
+  `InternshipLifecycleResponse`.
+- Persistencia del historial administrativo: tabla
+  `internship_status_history`. El seguimiento agregado se calcula a partir de
+  varias fuentes del dominio y no persiste una tabla propia.
 
 > [!WARNING]
 > No existe endpoint `/tracking`. Cualquier cambio que convierta `tracking` en un
@@ -60,6 +69,7 @@ La implementación real vive en `internships`:
 #### Responsabilidades actuales
 
 - Exponer el historial de estados de una práctica.
+- Exponer un seguimiento agregado del ciclo real de práctica.
 - Mantener orden cronológico de las transiciones.
 - Mostrar información básica del actor de la transición.
 - Mostrar motivo funcional y metadata asociada.
@@ -67,7 +77,7 @@ La implementación real vive en `internships`:
 
 #### Fuera de alcance
 
-- Métricas o analítica del proceso.
+- Métricas o analítica avanzada del proceso.
 - Seguimiento documental del módulo `documents`.
 - Seguimiento de notificaciones.
 - Auditoría técnica de requests, sesiones o errores.
@@ -79,11 +89,11 @@ La implementación real vive en `internships`:
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
 | Placeholder | `app/modules/tracking/.../__init__.py` | Declara estructura futura sin implementación funcional actual. |
-| Controller real | `app/modules/internships/controllers/internship_controller.py` | Expone `GET /internships/{internship_id}/tracking` y valida permisos de lectura. |
-| Service real | `app/modules/internships/services/internship_service.py` | Delega la consulta de historial mediante `list_internship_tracking`. |
-| Repository real | `app/modules/internships/repositories/internship_repository.py` | Consulta `InternshipStatusHistory` ordenado por fecha e ID. |
+| Controller real | `app/modules/internships/controllers/internship_controller.py` | Expone `GET /internships/{internship_id}/tracking` y `GET /internships/{internship_id}/lifecycle-tracking`; valida permisos de lectura. |
+| Service real | `app/modules/internships/services/internship_service.py` | Delega historial mediante `list_internship_tracking` y calcula ciclo de vida mediante `get_lifecycle_tracking`. |
+| Repository real | `app/modules/internships/repositories/internship_repository.py` | Consulta `InternshipStatusHistory`, autoevaluación, evaluación supervisor, invitaciones y presentaciones. |
 | Model real | `app/modules/internships/models/internship_status_history_model.py` | Persiste cada transición funcional de estado. |
-| Schema real | `app/modules/internships/schemas/internship_schema.py` | Define `InternshipTrackingResponse` y schemas anidados. |
+| Schema real | `app/modules/internships/schemas/internship_schema.py` | Define `InternshipTrackingResponse`, `InternshipLifecycleResponse` y schemas anidados. |
 
 ## Funcionalidad principal
 
@@ -99,11 +109,24 @@ La implementación real vive en `internships`:
 8. El repository lista transiciones ordenadas por `changed_at` e `id`.
 9. Se retorna una lista de `InternshipTrackingResponse`.
 
+#### Consulta de seguimiento de ciclo de vida
+
+1. El usuario llama a `GET /internships/{internship_id}/lifecycle-tracking`.
+2. El controller valida Bearer token.
+3. Se busca la práctica por `internship_id`.
+4. Si la práctica no existe, se responde `404`.
+5. Se valida que el usuario sea propietario o tenga rol privilegiado de lectura.
+6. Si no tiene permisos, se responde `403`.
+7. El service combina historial administrativo, autoevaluación, invitaciones y
+   evaluación del supervisor, presentaciones finales y campos de cierre.
+8. Se retorna `InternshipLifecycleResponse`.
+
 ## Endpoint disponible
 
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | GET | `/internships/{internship_id}/tracking` | Lista el historial cronológico de estados de una práctica. | Propietario o rol privilegiado |
+| GET | `/internships/{internship_id}/lifecycle-tracking` | Resume el avance completo de solicitud, ejecución, evaluaciones, presentación y cierre. | Propietario o rol privilegiado |
 
 Roles privilegiados de lectura:
 
@@ -146,6 +169,41 @@ Representa una entrada del historial funcional de una práctica.
     "action": "approve",
     "skip_review": false
   }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>InternshipLifecycleResponse</strong></summary>
+
+Representa el avance funcional agregado. No reemplaza el historial
+administrativo porque sus eventos pueden ser calculados desde distintas fuentes
+del dominio.
+
+```json
+{
+  "internship_id": 7,
+  "progress_percentage": 70,
+  "current_step": "Evaluación del supervisor completada",
+  "self_evaluation_submitted": true,
+  "supervisor_invitation_sent": true,
+  "supervisor_evaluation_submitted": false,
+  "final_presentation_scheduled": false,
+  "final_presentation_completed": false,
+  "can_generate_supervisor_invitation": true,
+  "can_close_practice": false,
+  "events": [
+    {
+      "id": "self_evaluation_submitted",
+      "type": "self_evaluation_submitted",
+      "title": "Autoevaluación enviada",
+      "description": "El estudiante completó su autoevaluación.",
+      "status": "completed",
+      "occurred_at": "2026-06-20T15:00:00Z",
+      "metadata": {}
+    }
+  ]
 }
 ```
 
@@ -197,11 +255,22 @@ Relaciones principales:
 - Si no hay actor asociado, `actor` puede venir como `null`.
 - Si no hay estado anterior, `previous_status` puede venir como `null`.
 
+#### Lectura del ciclo de vida
+
+- El endpoint de ciclo de vida no modifica datos.
+- Los eventos usan `completed`, `current`, `pending` o `blocked`.
+- La invitación del supervisor solo queda habilitada cuando la solicitud está
+  aprobada y la autoevaluación del estudiante fue enviada.
+- El cierre final solo debe habilitarse si la solicitud está aprobada, la
+  autoevaluación fue enviada, la evaluación del supervisor fue completada y la
+  presentación final fue completada.
+
 #### Metadata conocida
 
 | Acción | Metadata esperada |
 | --- | --- |
 | Creación | `{"event": "internship_created"}`. |
+| Inicio de revisión por apertura de detalle | `{"action": "start_review"}`. |
 | Aprobación | `{"action": "approve", "skip_review": false}`. |
 | Rechazo | `{"action": "reject"}`. |
 | Derivación | `{"action": "derive"}`. |
