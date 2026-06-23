@@ -2,9 +2,9 @@
 
 ## Alcance
 
-Estos casos documentan las pruebas de valor del módulo `notifications`. El foco está en persistencia de notificaciones, modos de despacho `simulated` y `real`, reintentos operativos, permisos de consulta, endpoint legacy de envío SMTP directo, contratos de eventos y seguridad del contenido HTML generado.
+Estos casos documentan las pruebas unitarias de valor del módulo `notifications`. El foco está en persistencia de notificaciones, modos de despacho `simulated` y `real`, reintentos operativos, contratos de eventos, seguridad del contenido HTML y efectos secundarios no bloqueantes.
 
-Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos verificables que protegen reglas operativas o contratos relevantes del sistema.
+Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos verificables que protegen reglas operativas o contratos relevantes.
 
 ## Unitarias
 
@@ -28,11 +28,11 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: En modo `real`, una notificación persistente debe intentar envío SMTP y actualizar su estado según el resultado.
-- Objetivo: Validar el ciclo `pending` -> `sent` o `failed` para notificaciones persistentes.
+- Contexto: En modo `real`, una notificación persistente debe intentar envío SMTP y actualizar estado según resultado.
+- Objetivo: Validar el ciclo `pending` -> `sent` o `failed`.
 - Escenario: El servicio crea una notificación en modo real y el transporte SMTP responde con éxito o error.
 - Variantes cubiertas:
-  - SMTP exitoso invoca el mailer y actualiza estado de entrega.
+  - SMTP exitoso invoca el mailer.
   - Error SMTP actualiza la notificación como `failed`.
 - Resultado esperado: El estado final refleja el resultado real del intento de envío.
 - Valor de negocio: Permite operar notificaciones reales con trazabilidad de entrega y fallos.
@@ -44,14 +44,14 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: El modo `real` requiere credenciales SMTP válidas. Si se mantienen credenciales por defecto, el sistema no debe intentar correos reales.
-- Objetivo: Verificar que una configuración incompleta cae a persistencia simulada y que el envío directo se rechaza sin mailer.
-- Escenario: El servicio se inicializa en modo real con credenciales de prueba o intenta enviar correo directo sin mailer configurado.
+- Contexto: El modo `real` requiere credenciales SMTP válidas.
+- Objetivo: Verificar que credenciales por defecto no intentan correos reales y que el envío directo falla sin mailer.
+- Escenario: El servicio se inicializa en modo real con credenciales de prueba o intenta envío directo sin mailer.
 - Variantes cubiertas:
-  - Modo `real` con credenciales por defecto no configura mailer y persiste como `simulated`.
+  - Modo `real` con credenciales por defecto persiste como `simulated`.
   - `send_email` falla con `RuntimeError` si no existe mailer SMTP.
 - Resultado esperado: No se intenta SMTP real y el error es explícito cuando se solicita envío directo.
-- Valor de negocio: Reduce riesgo de configuraciones ambiguas y evita asumir entregas reales que nunca ocurrieron.
+- Valor de negocio: Reduce riesgo de configuraciones ambiguas.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_service.py::TestCreateRealNotification::test_real_mode_falls_back_to_simulated_with_default_credentials`
   - `tests/modules/notifications/test_notification_service.py::TestInvalidRecipient::test_send_email_raises_runtime_error_in_simulated_mode`
@@ -60,13 +60,13 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: Una notificación persistente puede tener destinatario interno, pero el envío SMTP necesita un correo válido.
+- Contexto: Una notificación persistente puede tener destinatario interno, pero SMTP necesita correo válido.
 - Objetivo: Evitar intentos de envío sin destinatario de email.
-- Escenario: Se intenta despachar por SMTP una notificación que no tiene `recipient_email`.
+- Escenario: Se intenta despachar por SMTP una notificación sin `recipient_email`.
 - Variantes cubiertas:
   - Notificación persistente sin correo de destinatario.
 - Resultado esperado: El envío SMTP falla con error de destinatario inválido.
-- Valor de negocio: Evita errores silenciosos y facilita diagnóstico operativo de notificaciones no entregables.
+- Valor de negocio: Evita errores silenciosos y facilita diagnóstico operativo.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_service.py::TestInvalidRecipient::test_send_smtp_raises_on_no_recipient_email`
 
@@ -74,16 +74,16 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: Los módulos productores construyen notificaciones mediante helpers. El frontend, auditoría y diagnóstico dependen de `event_type`, destinatario y `payload` estables.
-- Objetivo: Validar que los helpers de eventos críticos construyen notificaciones con datos mínimos esperados.
-- Escenario: Se generan notificaciones para aprobación, rechazo, preparación de expediente y cambio de requisito.
+- Contexto: Los módulos productores construyen notificaciones mediante helpers con payload consumido por frontend y auditoría.
+- Objetivo: Validar que eventos críticos mantienen destinatario, `event_type` y metadata funcional.
+- Escenario: Se generan notificaciones para aprobación, rechazo, derivación y cambio de requisito.
 - Variantes cubiertas:
-  - Aprobación de práctica conserva `event_type`, destinatario y `internship_id`.
-  - Rechazo de práctica conserva motivo en payload.
-  - Preparación local del expediente conserva motivo en payload.
-  - Cambio de requisito conserva requisito, estado nuevo y estado anterior.
-- Resultado esperado: Las notificaciones generadas mantienen contratos de ruteo y metadata funcional.
-- Valor de negocio: Evita romper consumidores internos que interpretan notificaciones por tipo y payload.
+  - Aprobación conserva `internship_id`.
+  - Rechazo conserva motivo.
+  - Derivación conserva motivo.
+  - Cambio de requisito conserva identificador, tipo y estados.
+- Resultado esperado: Las notificaciones mantienen contratos estables de ruteo y payload.
+- Valor de negocio: Evita romper consumidores internos que interpretan notificaciones por tipo y metadata.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_internship_event_helpers_keep_routing_and_payload_contract`
   - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_requirement_status_changed_notification_keeps_payload_contract`
@@ -93,46 +93,44 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
 - Contexto: Las notificaciones se renderizan como HTML y pueden incluir datos ingresados por usuarios o administradores.
-- Objetivo: Evitar contenido engañoso por campos vacíos y reducir riesgo de inyección HTML en correos.
-- Escenario: Se construyen notificaciones con motivo ausente y con valores dinámicos que contienen HTML.
+- Objetivo: Evitar filas vacías e inyección HTML en correos transaccionales.
+- Escenario: Se construyen notificaciones con motivo ausente y valores dinámicos con HTML.
 - Variantes cubiertas:
-  - Rechazo sin motivo no muestra fila de motivo.
-  - Organización y motivo con tags HTML se escapan antes de insertarse en contenido.
+  - Rechazo sin motivo no muestra fila `Motivo`.
+  - Organización y motivo con tags HTML se escapan.
 - Resultado esperado: El contenido no incluye filas vacías ni HTML dinámico sin escapar.
-- Valor de negocio: Mejora seguridad y calidad de correos transaccionales enviados a usuarios.
+- Valor de negocio: Mejora seguridad y calidad de correos enviados a usuarios.
 - Pruebas automatizadas:
-  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_rejected_notification_without_reason`
   - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_event_helpers_escape_dynamic_html_values`
+  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_rejected_notification_without_reason`
 
 ### CU-U-NO-07: Productores toleran notificaciones como efecto secundario opcional
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications / Internships
-- Contexto: Las notificaciones no deben bloquear el flujo principal de una práctica si el servicio no está inyectado.
-- Objetivo: Confirmar que el productor puede emitir eventos cuando existe servicio y continuar normalmente cuando no existe.
-- Escenario: El servicio de prácticas aprueba una práctica con y sin `NotificationService` configurado.
+- Contexto: Las notificaciones no deben bloquear el flujo principal si el servicio no está inyectado.
+- Objetivo: Confirmar que el productor continúa normalmente cuando `notification_service=None`.
+- Escenario: El servicio de prácticas aprueba una práctica sin servicio de notificaciones configurado.
 - Variantes cubiertas:
-  - Aprobación emite notificación cuando hay servicio configurado.
-  - Aprobación continúa si `notification_service=None`.
-- Resultado esperado: La notificación se crea cuando corresponde, pero el flujo principal no depende de ella.
+  - Aprobación retorna resultado sin intentar notificar.
+- Resultado esperado: El flujo principal no depende de mensajería.
 - Valor de negocio: Evita que un problema de mensajería detenga acciones administrativas críticas.
 - Pruebas automatizadas:
-  - `tests/modules/notifications/test_notification_service.py::TestNotificationFromExternalService::test_internship_service_dispatches_notification_on_approve`
   - `tests/modules/notifications/test_notification_service.py::TestNotificationFromExternalService::test_internship_service_without_notification_service_skips_gracefully`
 
 ### CU-U-NO-08: Reintento respeta configuración y estados elegibles
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: El reintento manual solo tiene sentido si existe mailer SMTP configurado y la notificación está en estado reintentable.
-- Objetivo: Validar que el servicio no reintenta notificaciones inexistentes, no elegibles o sin mailer.
-- Escenario: Se solicita reintento en condiciones donde no corresponde ejecutar SMTP.
+- Contexto: El reintento manual solo tiene sentido con mailer configurado y notificación reintentable.
+- Objetivo: Validar que el servicio no reintenta notificaciones inexistentes, ya enviadas o sin mailer.
+- Escenario: Se solicita reintento en condiciones no elegibles.
 - Variantes cubiertas:
   - Mailer no configurado.
   - Notificación inexistente.
   - Notificación ya enviada.
 - Resultado esperado: El servicio retorna `None` y no ejecuta reintento.
-- Valor de negocio: Evita operaciones inconsistentes y mantiene clara la semántica de reintento operativo.
+- Valor de negocio: Evita operaciones inconsistentes.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_returns_none_when_mailer_not_configured`
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_returns_none_for_nonexistent_notification`
@@ -142,34 +140,16 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Unitaria
 - Dominio: Notifications
-- Contexto: Las notificaciones `failed` o `pending` pueden reintentarse manualmente. El estado final debe reflejar el resultado del nuevo intento.
-- Objetivo: Proteger la lógica operacional de recuperación de notificaciones fallidas o pendientes.
+- Contexto: Las notificaciones `failed` o `pending` pueden reintentarse manualmente.
+- Objetivo: Proteger la lógica operacional de recuperación de notificaciones.
 - Escenario: Se reintentan notificaciones elegibles con SMTP exitoso o fallido.
 - Variantes cubiertas:
   - Reintento exitoso desde `failed`.
   - Reintento exitoso desde `pending`.
   - Reintento con fallo SMTP conserva estado `failed`.
 - Resultado esperado: Éxito marca `sent`; fallo marca o mantiene `failed`.
-- Valor de negocio: Permite recuperación manual confiable sin perder trazabilidad de fallos.
+- Valor de negocio: Permite recuperación manual confiable sin perder trazabilidad.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_successful_for_failed_notification`
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_successful_for_pending_notification`
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_smtp_failure_keeps_notification_failed`
-
-### CU-U-NO-10: Contrato ORM mantiene columnas y enums críticos
-
-- Tipo de prueba: Unitaria
-- Dominio: Notifications
-- Contexto: Los modelos ORM deben mantenerse alineados manualmente con el esquema SQL inicial definido en `init.sql`.
-- Objetivo: Detectar cambios accidentales en tabla, columnas o enums usados por el módulo.
-- Escenario: Se inspeccionan el modelo `Notification` y enums de evento y estado.
-- Variantes cubiertas:
-  - Tabla y columnas críticas existen.
-  - Enum de eventos conserva valores funcionales.
-  - Enum de estados conserva valores de entrega.
-- Resultado esperado: El contrato ORM mantiene nombres y valores críticos.
-- Valor de negocio: Reduce riesgo de desalineación entre modelos, SQL y consumidores del módulo.
-- Pruebas automatizadas:
-  - `tests/modules/notifications/test_notification_model.py::test_notification_model_matches_database_contract`
-  - `tests/modules/notifications/test_notification_model.py::test_notification_event_type_enum_matches_business_contract`
-  - `tests/modules/notifications/test_notification_model.py::test_notification_status_enum_matches_delivery_contract`

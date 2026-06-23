@@ -8,23 +8,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 ## Integración
 
-### CU-I-IN-01: Secretaría puede derivar, pero no aprobar ni rechazar
-
-- Tipo de prueba: Integración
-- Dominio: Internships
-- Contexto: La `Secretaria de Carrera` participa en trámites documentales, pero no decide si una práctica se aprueba o rechaza académicamente. Los endpoints de acción aceptan varios roles a nivel HTTP y el servicio aplica el permiso específico.
-- Objetivo: Validar que el endpoint y la validación interna respetan las responsabilidades reales del rol.
-- Escenario: Un usuario con rol `Secretaria de Carrera` intenta aprobar, rechazar y derivar una práctica mediante HTTP.
-- Variantes cubiertas:
-  - Secretaría intenta `POST /internships/{id}/approve`.
-  - Secretaría intenta `POST /internships/{id}/reject`.
-  - Secretaría ejecuta `POST /internships/{id}/derive` con comentario válido.
-- Resultado esperado: Aprobar y rechazar devuelven `403 Forbidden`; derivar devuelve `200 OK`.
-- Valor de negocio: Evita que un rol documental tome decisiones académico-administrativas fuera de sus atribuciones.
-- Pruebas automatizadas:
-  - `tests/modules/internships/test_internship_router.py::test_secretaria_can_derive_but_cannot_approve_or_reject`
-
-### CU-I-IN-02: Tracking permite propietario y roles privilegiados
+### CU-I-IN-01: Tracking permite propietario y roles privilegiados
 
 - Tipo de prueba: Integración
 - Dominio: Internships
@@ -44,7 +28,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_router.py::test_get_internship_tracking_rejects_forbidden_user`
   - `tests/modules/internships/test_internship_router.py::test_get_internship_tracking_returns_not_found`
 
-### CU-I-IN-03: Dashboard rechaza rol estudiante
+### CU-I-IN-02: Dashboard rechaza rol estudiante
 
 - Tipo de prueba: Integración
 - Dominio: Internships

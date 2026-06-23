@@ -2,9 +2,9 @@
 
 ## Alcance
 
-Estos casos documentan las pruebas de valor del módulo `documents`. El foco está en carga documental, validación de archivos, storage privado, permisos de acceso, revisión documental, eliminación lógica, paquete DIRAE, exportación CSV y contratos de modelo.
+Estos casos documentan pruebas de integración liviana del módulo `documents`. El foco está en contratos HTTP observables, descarga autenticada, transformación de upload, permisos y errores propagados por el controller.
 
-Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos verificables que protegen reglas documentales, privacidad y consistencia operativa.
+Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos relevantes de integración interna.
 
 ## Integración
 
@@ -26,53 +26,60 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/documents/test_document_router.py::test_download_document_returns_file_for_owner`
   - `tests/modules/documents/test_document_router.py::test_download_document_rejects_cross_student`
 
-### CU-I-DO-02: Controller delega operaciones documentales al service y preserva contrato
+### CU-I-DO-02: Controller transforma upload multipart hacia metadata documental
 
 - Tipo de prueba: Integración
 - Dominio: Documents
-- Contexto: El controller transforma multipart, responses y payloads hacia el service documental.
-- Objetivo: Validar que operaciones HTTP principales retornan contratos esperados y delegan argumentos críticos.
-- Escenario: Se listan tipos, se carga archivo, se revisa documento, se elimina, se consulta paquete y se exporta CSV usando service doble.
+- Contexto: La carga HTTP recibe `UploadFile` y debe entregar bytes reales al service.
+- Objetivo: Validar que el controller lee el contenido del archivo y retorna metadata pública.
+- Escenario: Se invoca el endpoint de carga con un archivo simulado.
 - Variantes cubiertas:
-  - Listado de tipos documentales activos.
-  - Upload lee contenido del archivo y retorna metadata.
-  - Revisión retorna documento actualizado.
-  - Delete retorna `204`.
-  - Paquete documental retorna resumen.
-  - Exportación retorna CSV con media type y filename.
-- Resultado esperado: El controller conserva contratos HTTP y delega correctamente.
-- Valor de negocio: Evita romper integración frontend-backend de gestión documental.
+  - El contenido binario llega al service.
+  - La respuesta contiene metadata del documento creado.
+- Resultado esperado: El contrato multipart queda preservado.
+- Valor de negocio: Evita romper la integración frontend-backend de carga documental.
 - Pruebas automatizadas:
-  - `tests/modules/documents/test_document_router.py::test_list_document_types_returns_active_types`
   - `tests/modules/documents/test_document_router.py::test_upload_document_reads_file_and_returns_metadata`
-  - `tests/modules/documents/test_document_router.py::test_update_document_status_returns_reviewed_document`
-  - `tests/modules/documents/test_document_router.py::test_delete_document_returns_204`
-  - `tests/modules/documents/test_document_router.py::test_get_document_package_returns_summary`
-  - `tests/modules/documents/test_document_router.py::test_export_dirae_document_packages_returns_csv`
 
 ### CU-I-DO-03: Roles documentales restringen revisión y exportación
 
 - Tipo de prueba: Integración
 - Dominio: Documents
-- Contexto: Estudiantes pueden cargar y consultar sus documentos, pero no revisar ni exportar paquetes DIRAE.
+- Contexto: Estudiantes y FICA no deben revisar documentos ni exportar paquetes DIRAE.
 - Objetivo: Validar dependencias de roles para acciones documentales administrativas.
-- Escenario: Un usuario con rol `Estudiante` intenta revisar documento y exportar paquetes DIRAE.
+- Escenario: Usuarios no documentales intentan revisar documentos y exportar paquetes.
 - Variantes cubiertas:
-  - Estudiante intenta actualizar estado documental.
-  - Estudiante intenta exportar paquetes DIRAE.
-- Resultado esperado: Ambas acciones administrativas devuelven `403`.
-- Valor de negocio: Evita que estudiantes aprueben documentos o generen exportaciones institucionales.
+  - Roles no documentales reciben `403` al revisar.
+  - Roles no documentales reciben `403` al exportar.
+- Resultado esperado: Solo roles documentales autorizados ejecutan acciones administrativas.
+- Valor de negocio: Evita aprobaciones documentales o exportaciones institucionales no autorizadas.
 - Pruebas automatizadas:
-  - `tests/modules/documents/test_document_router.py::test_update_document_status_rejects_student_role`
-  - `tests/modules/documents/test_document_router.py::test_export_dirae_document_packages_rejects_student_role`
+  - `tests/modules/documents/test_document_router.py::test_update_document_status_rejects_non_document_admin_roles`
+  - `tests/modules/documents/test_document_router.py::test_export_dirae_document_packages_rejects_non_document_admin_roles`
 
-### CU-I-DO-04: Controller propaga errores de servicio
+### CU-I-DO-04: Exportación HTTP de paquetes DIRAE conserva contrato CSV
+
+- Tipo de prueba: Integración
+- Dominio: Documents
+- Contexto: El endpoint de exportación debe entregar un archivo CSV descargable.
+- Objetivo: Validar media type, encabezado de descarga y contenido inicial del CSV.
+- Escenario: Un rol autorizado exporta paquetes DIRAE con IDs explícitos.
+- Variantes cubiertas:
+  - `media_type` de CSV.
+  - Header `Content-Disposition` con nombre `.csv`.
+  - Contenido incluye columnas esperadas.
+- Resultado esperado: El frontend recibe un archivo CSV descargable.
+- Valor de negocio: Protege el contrato de exportación institucional.
+- Pruebas automatizadas:
+  - `tests/modules/documents/test_document_router.py::test_export_dirae_document_packages_returns_csv`
+
+### CU-I-DO-05: Controller propaga errores de servicio
 
 - Tipo de prueba: Integración
 - Dominio: Documents
 - Contexto: El service concentra reglas y errores de negocio; el controller no debe ocultarlos.
 - Objetivo: Validar que errores HTTP del service se propagan al consumidor.
-- Escenario: El service lanza `HTTPException` al listar documentos de práctica inexistente.
+- Escenario: El service lanza `HTTPException` al listar documentos de una práctica inexistente.
 - Variantes cubiertas:
   - Error `404` del service.
 - Resultado esperado: El controller propaga el mismo código de error.

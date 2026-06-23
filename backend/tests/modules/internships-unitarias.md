@@ -22,7 +22,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Valor de negocio: Protege al estudiante y a la institución frente a una aprobación sin cobertura válida.
 - Pruebas automatizadas:
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_seasonal_without_insurance_raises_409`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_seasonal_internship_raises_409_without_insurance_or_exception`
 
 ### CU-U-IN-02: Exigir validación explícita de seguro por solicitud fuera de periodo regular
 
@@ -68,7 +67,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Valor de negocio: Asegura el cumplimiento de un prerrequisito formativo obligatorio.
 - Pruebas automatizadas:
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_1_blocked_without_induction`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_1_without_induction_raises_409_absolute_block`
 
 ### CU-U-IN-05: Permitir Práctica I con inducción aprobada
 
@@ -101,8 +99,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Valor de negocio: Evita avances académicos fuera de orden.
 - Pruebas automatizadas:
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_2_fails_without_practice_1_requirement`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_2_blocked_without_approved_practice_1`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_2_none_status_not_crashes`
 
 ### CU-U-IN-07: Permitir Práctica II con Práctica I aprobada o excepción
 
@@ -120,9 +116,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_2_allowed_with_practice_1_requirement`
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_2_with_sequentiality_exception`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_2_allowed_with_approved_practice_1`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_2_allowed_with_sequentiality_exception`
-  - `tests/modules/internships/test_internship_exception.py::test_approve_practice_2_without_induction_allows_advance`
 
 ### CU-U-IN-08: Validar secuencialidad de Tesis
 
@@ -192,7 +185,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Aprobar práctica ya `Aprobada`.
   - Rechazar práctica ya `Rechazada`.
   - Rechazar práctica ya `Aprobada`.
-  - Derivar práctica `Aprobada`.
   - Derivar práctica `Rechazada`.
   - Editar una práctica en estado terminal.
   - Registrar excepción sobre una práctica en estado terminal.
@@ -202,7 +194,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_actions.py::TestApprove::test_ya_aprobada_lanza_409`
   - `tests/modules/internships/test_internship_actions.py::TestReject::test_ya_rechazada_lanza_409`
   - `tests/modules/internships/test_internship_actions.py::TestReject::test_ya_aprobada_lanza_409`
-  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_aprobada_lanza_409`
   - `tests/modules/internships/test_internship_actions.py::TestDerive::test_rechazada_lanza_409`
   - `tests/modules/internships/test_admin_edit_cancel_internships.py::TestAdminUpdate::test_admin_update_rejects_terminal_status`
 
@@ -246,7 +237,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_exception.py::test_grant_exception_rejects_invalid_rules`
   - `tests/modules/internships/test_internship_exception.py::test_grant_exception_requires_privileged_role`
   - `tests/modules/internships/test_internship_exception.py::test_grant_sequentiality_exception_success`
-  - `tests/modules/internships/test_internship_exception.py::test_grant_sequentiality_exception_rejects_invalid_sequentiality_rule`
 
 ### CU-U-IN-14: Elegibilidad de registro informa bloqueos sin impedir creación
 
@@ -254,14 +244,12 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Dominio: Internships
 - Contexto: La elegibilidad orienta al frontend sobre requisitos pendientes, pero no crea, aprueba ni rechaza prácticas.
 - Objetivo: Confirmar que el diagnóstico comunica bloqueos relevantes sin convertirlos en bloqueo de creación.
-- Escenario: Se consulta elegibilidad con combinaciones de seguro, inducción, Práctica I aprobada y excepciones.
+- Escenario: Se consulta elegibilidad con combinaciones de seguro, inducción y periodo de práctica.
 - Variantes cubiertas:
   - Falta seguro e inducción para práctica fuera de periodo regular de tipo I.
   - Todos los requisitos relevantes están cumplidos.
   - Inducción cumplida mediante intento aprobado.
   - Práctica semestral no se bloquea por falta de seguro.
-  - Secuencialidad detecta ausencia de Práctica I aprobada.
-  - Secuencialidad detecta excepción registrada.
 - Resultado esperado: La respuesta indica flags y `blocked` según el contexto consultado.
 - Valor de negocio: Permite advertencias tempranas al estudiante sin impedir solicitudes que aún pueden ser revisadas.
 - Pruebas automatizadas:
@@ -269,27 +257,8 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_induction_service.py::TestRegistrationEligibility::test_eligibility_returns_not_blocked_when_all_met`
   - `tests/modules/internships/test_induction_service.py::TestRegistrationEligibility::test_eligibility_uses_passed_induction_attempt_as_fallback`
   - `tests/modules/internships/test_induction_service.py::TestRegistrationEligibility::test_semester_does_not_block_when_school_insurance_is_missing`
-  - `tests/modules/internships/test_internship_exception.py::test_registration_eligibility_sequentiality_blocked`
-  - `tests/modules/internships/test_internship_exception.py::test_registration_eligibility_has_approved_practice_1`
-  - `tests/modules/internships/test_internship_exception.py::test_registration_eligibility_has_sequentiality_exception`
-  - `tests/modules/internships/test_internship_exception.py::test_registration_eligibility_school_insurance_exception_filtered`
 
-### CU-U-IN-15: Crear Práctica II no exige Práctica I aprobada
-
-- Tipo de prueba: Unitaria
-- Dominio: Internships
-- Contexto: La secuencialidad se valida al aprobar, no al crear la solicitud de Práctica II.
-- Objetivo: Permitir que el estudiante registre la solicitud aunque la aprobación final dependa de requisitos posteriores.
-- Escenario: Se crea una solicitud de `Práctica de Estudio II` con y sin Práctica I aprobada.
-- Variantes cubiertas:
-  - Creación de Práctica II sin Práctica I aprobada.
-  - Creación de Práctica II con una Práctica I activa pero no aprobada.
-- Resultado esperado: La solicitud se crea en estado inicial y no se bloquea por secuencialidad.
-- Valor de negocio: Evita bloquear solicitudes tempranas que aún pueden regularizarse antes de la aprobación.
-- Pruebas automatizadas:
-  - `tests/modules/internships/test_internship_exception.py::test_create_practice_2_does_not_apply_sequentiality_block`
-
-### CU-U-IN-16: Aprobación sincroniza requisito académico
+### CU-U-IN-15: Aprobación sincroniza requisito académico
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -305,7 +274,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_1_syncs_academic_requirement`
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_practice_2_syncs_academic_requirement`
 
-### CU-U-IN-17: Creación calcula seguro escolar desde requisito institucional
+### CU-U-IN-16: Creación calcula seguro escolar desde requisito institucional
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -316,6 +285,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Requisito `school_insurance` completado produce `has_school_insurance=True`.
   - Sin requisito produce `has_school_insurance=False`.
   - Requisito existente pero incompleto produce `has_school_insurance=False`.
+  - La solicitud queda asociada al usuario autenticado, no a un valor enviado por el cliente.
 - Resultado esperado: El valor persistido se calcula desde la fuente institucional.
 - Valor de negocio: Mantiene la autoridad del backend sobre requisitos institucionales.
 - Pruebas automatizadas:
@@ -324,7 +294,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_induction_service.py::TestSchoolInsuranceComputation::test_create_sets_insurance_false_when_requirement_not_completed`
   - `tests/modules/internships/test_internship_service.py::test_create_internship_assigns_authenticated_user_id`
 
-### CU-U-IN-18: Dashboard normaliza estados y calcula estadísticas
+### CU-U-IN-17: Dashboard normaliza estados y calcula estadísticas
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -343,7 +313,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_service.py::test_list_dashboard_internships_filters_by_normalized_status`
   - `tests/modules/internships/test_internship_service.py::test_get_dashboard_stats_counts_normalized_statuses`
 
-### CU-U-IN-19: Edición administrativa exige motivo, rol y campos válidos
+### CU-U-IN-18: Edición administrativa exige motivo, rol y campos válidos
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -367,7 +337,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_admin_edit_cancel_internships.py::TestAdminUpdate::test_admin_update_rejects_blank_reason`
   - `tests/modules/internships/test_admin_edit_cancel_internships.py::TestAdminUpdate::test_admin_update_rejects_without_editable_fields`
 
-### CU-U-IN-20: Anulación lógica conserva trazabilidad
+### CU-U-IN-19: Anulación lógica conserva trazabilidad
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -385,7 +355,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_admin_edit_cancel_internships.py::TestCancelInternship::test_cancel_missing_internship_returns_404`
   - `tests/modules/internships/test_admin_edit_cancel_internships.py::TestCancelInternship::test_cancel_rejects_already_cancelled_internship`
 
-### CU-U-IN-21: Contrato de creación de práctica valida payload
+### CU-U-IN-20: Contrato de creación de práctica valida payload
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -401,7 +371,6 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Campos opcionales pueden omitirse.
   - Campos requeridos en blanco son rechazados.
   - Email de supervisor inválido es rechazado.
-  - `has_school_insurance` enviado por cliente es rechazado.
 - Resultado esperado: El schema acepta solo contratos válidos y rechaza datos inválidos con `ValidationError`.
 - Valor de negocio: Protege la calidad de datos de solicitudes de práctica.
 - Pruebas automatizadas:
@@ -414,9 +383,8 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_blank_required_text`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_invalid_supervisor_email`
   - `tests/modules/internships/test_internship_schema.py::test_register_semester_ok`
-  - `tests/modules/internships/test_internship_schema.py::test_create_request_rejects_client_supplied_school_insurance`
 
-### CU-U-IN-22: Contrato de excepción valida regla y motivo
+### CU-U-IN-21: Contrato de excepción valida regla y motivo
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -438,7 +406,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_induction_service.py::TestInternshipExceptionRequestSchema::test_rejects_blank_reason`
   - `tests/modules/internships/test_internship_schema.py::test_exception_request_rejects_blank_reason`
 
-### CU-U-IN-23: Permisos de lectura permiten propietario o rol privilegiado
+### CU-U-IN-22: Permisos de lectura permiten propietario o rol privilegiado
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships
@@ -459,7 +427,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_permissions.py::test_can_read_internship_allows_privileged_role_for_non_owner`
   - `tests/modules/internships/test_internship_permissions.py::test_can_read_internship_rejects_non_owner_without_privileged_role`
 
-### CU-U-IN-24: Contrato ORM mantiene columnas y enums críticos
+### CU-U-IN-23: Contrato ORM mantiene columnas y enums críticos
 
 - Tipo de prueba: Unitaria
 - Dominio: Internships

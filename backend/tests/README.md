@@ -45,14 +45,19 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Admin | 13 | 21 | 5 | 7 | 3 | 0 | 3 |
-| Auth | 17 | 52 | 7 | 15 | 3 | 0 | 3 |
-| Documents | 13 | 50 | 4 | 12 | 3 | 0 | 3 |
-| Internships | 24 | 95 | 3 | 6 | 2 | 0 | 2 |
-| Notifications | 10 | 22 | 6 | 12 | 3 | 0 | 3 |
-| **Total** | **77** | **240** | **25** | **52** | **14** | **0** | **14** |
+| Admin | 9 | 20 | 3 | 7 | 3 | 0 | 3 |
+| Auth | 17 | 52 | 7 | 16 | 3 | 0 | 3 |
+| Data portability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
+| Documents | 13 | 53 | 5 | 8 | 3 | 0 | 3 |
+| Internships | 23 | 80 | 2 | 5 | 2 | 0 | 2 |
+| Notifications | 9 | 18 | 5 | 8 | 3 | 0 | 3 |
+| Presentation letters | 6 | 9 | 0 | 0 | 0 | 0 | 0 |
+| Scheduling | 4 | 15 | 0 | 0 | 0 | 0 | 0 |
+| Self evaluations | 3 | 7 | 0 | 0 | 0 | 0 | 0 |
+| Supervisor evaluations | 4 | 9 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **90** | **265** | **22** | **44** | **14** | **0** | **14** |
 
-En total hay 116 casos documentados y 292 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
+En total hay 126 casos documentados y 309 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
 
 ## Índice de casos de prueba
 
@@ -61,23 +66,17 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | ID | Tipo | Módulo | Caso | Tests | Archivo |
 | --- | --- | --- | --- | ---: | --- |
 | CU-U-AD-01 | Unitaria | Admin | Resumen administrativo conserva totales y estados | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-02 | Unitaria | Admin | Listado administrativo de estudiantes conserva datos relevantes | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-03 | Unitaria | Admin | Listado administrativo de prácticas mapea estudiante y estado | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-04 | Unitaria | Admin | Filtros normalizados del dashboard agrupan estados funcionales | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-05 | Unitaria | Admin | Detalle administrativo de práctica existente o inexistente | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-06 | Unitaria | Admin | Listado de requisitos académicos del estudiante | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-07 | Unitaria | Admin | Transiciones válidas de requisitos académicos | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-08 | Unitaria | Admin | Transiciones inválidas de requisitos académicos | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-09 | Unitaria | Admin | Actualización de requisito académico registra trazabilidad | 3 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-10 | Unitaria | Admin | Actualización de requisito académico emite notificación sin bloquear flujo | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-11 | Unitaria | Admin | Listado de requisitos institucionales del estudiante | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-12 | Unitaria | Admin | Seguro escolar se valida por solicitud y mantiene requisito institucional | 3 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-U-AD-13 | Unitaria | Admin | Seguro escolar rechaza usuarios que no son estudiantes | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
-| CU-I-AD-01 | Integración | Admin | Roles autorizados para seguro escolar | 3 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
-| CU-I-AD-02 | Integración | Admin | Detalle de práctica inexistente se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
-| CU-I-AD-03 | Integración | Admin | Transición inválida se traduce a 400 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
-| CU-I-AD-04 | Integración | Admin | Requisito académico inexistente se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
-| CU-I-AD-05 | Integración | Admin | Seguro escolar de usuario no estudiante se traduce a 404 | 1 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
+| CU-U-AD-02 | Unitaria | Admin | Listados administrativos conservan datos relevantes | 4 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-03 | Unitaria | Admin | Filtros normalizados del dashboard agrupan estados funcionales | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-04 | Unitaria | Admin | Detalle administrativo de práctica existente o inexistente | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-05 | Unitaria | Admin | Actualización de requisito académico registra trazabilidad | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-06 | Unitaria | Admin | Reportes agregados respetan alcance por rol y carrera | 3 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-07 | Unitaria | Admin | Exportación CSV de reportes omite campos personales | 1 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-08 | Unitaria | Admin | Seguro escolar por solicitud respeta estado y anulación | 2 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-U-AD-09 | Unitaria | Admin | Requisito institucional histórico de seguro escolar aplica solo a estudiantes | 4 | [`modules/admin-unitarias.md`](modules/admin-unitarias.md) |
+| CU-I-AD-01 | Integración | Admin | Roles de lectura administrativa permiten decisión académica | 2 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
+| CU-I-AD-02 | Integración | Admin | Seguro escolar queda restringido a Dirección de carrera | 3 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
+| CU-I-AD-03 | Integración | Admin | Reportes administrativos usan roles propios de análisis | 2 | [`modules/admin-integracion.md`](modules/admin-integracion.md) |
 | CU-E2E-AD-01 | End-to-end | Admin | Coordinador consulta dashboard y detalle de práctica | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
 | CU-E2E-AD-02 | End-to-end | Admin | Coordinador actualiza requisito académico y estudiante recibe notificación | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
 | CU-E2E-AD-03 | End-to-end | Admin | Director valida seguro escolar y práctica fuera de periodo regular puede aprobarse | Pendiente | [`modules/admin-end-to-end.md`](modules/admin-end-to-end.md) |
@@ -99,62 +98,63 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AU-16 | Unitaria | Auth | Google OAuth crea estudiante para dominio permitido | 1 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-U-AU-17 | Unitaria | Auth | Google OAuth rechaza dominio o código inválido | 2 | [`modules/auth-unitarias.md`](modules/auth-unitarias.md) |
 | CU-I-AU-01 | Integración | Auth | `get_current_user` rechaza refresh token como Bearer | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
-| CU-I-AU-02 | Integración | Auth | `get_current_user` valida access token y usuario vigente | 5 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
-| CU-I-AU-03 | Integración | Auth | Controller de login traduce credenciales inválidas | 2 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
-| CU-I-AU-04 | Integración | Auth | Controller de refresh traduce refresh inválido | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
-| CU-I-AU-05 | Integración | Auth | Controller de logout traduce refresh inválido | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
-| CU-I-AU-06 | Integración | Auth | `/auth/me` no expone credenciales ni campos sensibles | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
+| CU-I-AU-02 | Integración | Auth | Controller de login expone contrato de sesión | 3 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
+| CU-I-AU-03 | Integración | Auth | Controller de refresh renueva sesión desde body o cookie | 3 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
+| CU-I-AU-04 | Integración | Auth | Controller de logout revoca sesión y limpia cookie | 2 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
+| CU-I-AU-05 | Integración | Auth | `/auth/me` no expone credenciales ni campos sensibles | 1 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
+| CU-I-AU-06 | Integración | Auth | Activación de cuenta expone contrato de estado inicial | 2 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
 | CU-I-AU-07 | Integración | Auth | Google controller maneja cookie, state y redirect | 4 | [`modules/auth-integracion.md`](modules/auth-integracion.md) |
 | CU-E2E-AU-01 | End-to-end | Auth | Login local, consulta de usuario actual y logout | Pendiente | [`modules/auth-end-to-end.md`](modules/auth-end-to-end.md) |
 | CU-E2E-AU-02 | End-to-end | Auth | Login y rotación de refresh token | Pendiente | [`modules/auth-end-to-end.md`](modules/auth-end-to-end.md) |
 | CU-E2E-AU-03 | End-to-end | Auth | Google OAuth completo en entorno controlado | Pendiente | [`modules/auth-end-to-end.md`](modules/auth-end-to-end.md) |
-| CU-U-DO-01 | Unitaria | Documents | Carga documental válida persiste metadata y archivo privado | 2 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-02 | Unitaria | Documents | Carga documental rechaza archivo inválido | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-03 | Unitaria | Documents | Carga documental valida práctica, tipo documental y propietario | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-04 | Unitaria | Documents | Carga documental limpia archivo si falla persistencia | 1 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-05 | Unitaria | Documents | Listado y descarga respetan permisos documentales | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-06 | Unitaria | Documents | Descarga rechaza archivos inexistentes, eliminados o paths inseguros | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-07 | Unitaria | Documents | Revisión documental respeta roles, estados y comentario obligatorio | 5 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-08 | Unitaria | Documents | Eliminación lógica respeta propietario, roles y estado aprobado | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-09 | Unitaria | Documents | Paquete DIRAE exportable requiere solicitud aprobada, práctica finalizada, expediente local listo y documentos aprobados | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-10 | Unitaria | Documents | Paquete DIRAE selecciona documentos vigentes y últimos aprobados | 5 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
-| CU-U-DO-11 | Unitaria | Documents | Paquete DIRAE construye datos del estudiante y controla acceso | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DP-01 | Unitaria | Data portability | Exportación JSON minimiza campos sensibles | 1 | [`modules/data-portability-unitarias.md`](modules/data-portability-unitarias.md) |
+| CU-U-DP-02 | Unitaria | Data portability | Exportación requiere rol estudiante | 1 | [`modules/data-portability-unitarias.md`](modules/data-portability-unitarias.md) |
+| CU-U-DO-01 | Unitaria | Documents | Carga documental válida persiste metadata y archivo privado | 1 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-02 | Unitaria | Documents | Carga documental rechaza archivo inválido | 2 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-03 | Unitaria | Documents | Carga documental valida práctica, tipo, propietario y estado | 6 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-04 | Unitaria | Documents | Secretaría solo carga documentos administrativos no sensibles | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-05 | Unitaria | Documents | Listado y descarga respetan permisos y sensibilidad | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-06 | Unitaria | Documents | Descarga rechaza archivos inexistentes o eliminados | 2 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-07 | Unitaria | Documents | Revisión documental respeta comentario obligatorio y trazabilidad | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-08 | Unitaria | Documents | Eliminación lógica respeta estado y rol | 2 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-09 | Unitaria | Documents | Paquete DIRAE exportable exige condiciones completas | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-10 | Unitaria | Documents | Paquete DIRAE selecciona documentos vigentes y últimos aprobados | 4 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
+| CU-U-DO-11 | Unitaria | Documents | Paquete DIRAE protege datos sensibles y acceso | 7 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-12 | Unitaria | Documents | Exportación de expediente para DIRAE genera CSV y auditoría estructurada | 6 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-U-DO-13 | Unitaria | Documents | Contrato ORM documental mantiene columnas y enums críticos | 3 | [`modules/documents-unitarias.md`](modules/documents-unitarias.md) |
 | CU-I-DO-01 | Integración | Documents | Descarga HTTP exige autenticación y respeta propietario | 3 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
-| CU-I-DO-02 | Integración | Documents | Controller delega operaciones documentales al service y preserva contrato | 6 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
+| CU-I-DO-02 | Integración | Documents | Controller transforma upload multipart hacia metadata documental | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
 | CU-I-DO-03 | Integración | Documents | Roles documentales restringen revisión y exportación | 2 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
-| CU-I-DO-04 | Integración | Documents | Controller propaga errores de servicio | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
+| CU-I-DO-04 | Integración | Documents | Exportación HTTP de paquetes DIRAE conserva contrato CSV | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
+| CU-I-DO-05 | Integración | Documents | Controller propaga errores de servicio | 1 | [`modules/documents-integracion.md`](modules/documents-integracion.md) |
 | CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
 | CU-E2E-DO-03 | End-to-end | Documents | Exportación de expediente para DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents-end-to-end.md`](modules/documents-end-to-end.md) |
-| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-02 | Unitaria | Internships | Exigir validación explícita de seguro por solicitud fuera de periodo regular | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión fuera de periodo regular sin seguro | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-04 | Unitaria | Internships | Bloquear Práctica I si el estudiante no aprobó la inducción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-04 | Unitaria | Internships | Bloquear Práctica I si el estudiante no aprobó la inducción | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-05 | Unitaria | Internships | Permitir Práctica I con inducción aprobada | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-06 | Unitaria | Internships | Bloquear Práctica II sin Práctica I aprobada | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-07 | Unitaria | Internships | Permitir Práctica II con Práctica I aprobada o excepción | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-06 | Unitaria | Internships | Bloquear Práctica II sin Práctica I aprobada | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-07 | Unitaria | Internships | Permitir Práctica II con Práctica I aprobada o excepción | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-08 | Unitaria | Internships | Validar secuencialidad de Tesis | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-09 | Unitaria | Internships | Validar regla de Práctica Controlada y ramo paralelo | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-10 | Unitaria | Internships | Validar aprobación normal versus aprobación directa | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-11 | Unitaria | Internships | Impedir acciones sobre estados terminales | 6 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-11 | Unitaria | Internships | Impedir acciones sobre estados terminales | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
 | CU-U-IN-12 | Unitaria | Internships | Rechazo y derivación deben exigir comentario | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-13 | Unitaria | Internships | Validar excepciones administrativas | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-14 | Unitaria | Internships | Elegibilidad de registro informa bloqueos sin impedir creación | 8 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-15 | Unitaria | Internships | Crear Práctica II no exige Práctica I aprobada | 1 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-16 | Unitaria | Internships | Aprobación sincroniza requisito académico | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-17 | Unitaria | Internships | Creación calcula seguro escolar desde requisito institucional | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-18 | Unitaria | Internships | Dashboard normaliza estados y calcula estadísticas | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-19 | Unitaria | Internships | Edición administrativa exige motivo, rol y campos válidos | 6 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-20 | Unitaria | Internships | Anulación lógica conserva trazabilidad | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-21 | Unitaria | Internships | Contrato de creación de práctica valida payload | 10 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-22 | Unitaria | Internships | Contrato de excepción valida regla y motivo | 7 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-23 | Unitaria | Internships | Permisos de lectura permiten propietario o rol privilegiado | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-U-IN-24 | Unitaria | Internships | Contrato ORM mantiene columnas y enums críticos | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
-| CU-I-IN-01 | Integración | Internships | Secretaría puede derivar, pero no aprobar ni rechazar | 1 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
-| CU-I-IN-02 | Integración | Internships | Tracking permite propietario y roles privilegiados | 4 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
-| CU-I-IN-03 | Integración | Internships | Dashboard rechaza rol estudiante | 1 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
+| CU-U-IN-13 | Unitaria | Internships | Validar excepciones administrativas | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-14 | Unitaria | Internships | Elegibilidad de registro informa bloqueos sin impedir creación | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-15 | Unitaria | Internships | Aprobación sincroniza requisito académico | 2 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-16 | Unitaria | Internships | Creación calcula seguro escolar desde requisito institucional | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-17 | Unitaria | Internships | Dashboard normaliza estados y calcula estadísticas | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-18 | Unitaria | Internships | Edición administrativa exige motivo, rol y campos válidos | 6 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-19 | Unitaria | Internships | Anulación lógica conserva trazabilidad | 3 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-20 | Unitaria | Internships | Contrato de creación de práctica valida payload | 9 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-21 | Unitaria | Internships | Contrato de excepción valida regla y motivo | 7 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-22 | Unitaria | Internships | Permisos de lectura permiten propietario o rol privilegiado | 5 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-U-IN-23 | Unitaria | Internships | Contrato ORM mantiene columnas y enums críticos | 4 | [`modules/internships-unitarias.md`](modules/internships-unitarias.md) |
+| CU-I-IN-01 | Integración | Internships | Tracking permite propietario y roles privilegiados | 4 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
+| CU-I-IN-02 | Integración | Internships | Dashboard rechaza rol estudiante | 1 | [`modules/internships-integracion.md`](modules/internships-integracion.md) |
 | CU-E2E-IN-01 | End-to-end | Internships | Flujo completo de Práctica I aprobada | Pendiente | [`modules/internships-end-to-end.md`](modules/internships-end-to-end.md) |
 | CU-E2E-IN-02 | End-to-end | Internships | Flujo completo fuera de periodo regular bloqueado y luego aprobado | Pendiente | [`modules/internships-end-to-end.md`](modules/internships-end-to-end.md) |
 | CU-U-NO-01 | Unitaria | Notifications | Persistir notificaciones simuladas sin invocar SMTP | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
@@ -163,19 +163,34 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-NO-04 | Unitaria | Notifications | Rechazar envío SMTP persistente sin destinatario de correo | 1 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-05 | Unitaria | Notifications | Helpers de eventos conservan contrato de ruteo y payload | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-06 | Unitaria | Notifications | Contenido HTML omite datos vacíos y escapa valores dinámicos | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
-| CU-U-NO-07 | Unitaria | Notifications | Productores toleran notificaciones como efecto secundario opcional | 2 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
+| CU-U-NO-07 | Unitaria | Notifications | Productores toleran notificaciones como efecto secundario opcional | 1 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-08 | Unitaria | Notifications | Reintento respeta configuración y estados elegibles | 3 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
 | CU-U-NO-09 | Unitaria | Notifications | Reintento actualiza estado según resultado SMTP | 3 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
-| CU-U-NO-10 | Unitaria | Notifications | Contrato ORM mantiene columnas y enums críticos | 3 | [`modules/notifications-unitarias.md`](modules/notifications-unitarias.md) |
-| CU-I-NO-01 | Integración | Notifications | Usuario autenticado lista sus notificaciones | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
+| CU-I-NO-01 | Integración | Notifications | Usuario autenticado lista su bandeja de notificaciones | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-I-NO-02 | Integración | Notifications | Usuario solo consulta detalle de notificaciones propias | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
-| CU-I-NO-03 | Integración | Notifications | Controller de reintento traduce resultado operacional | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
-| CU-I-NO-04 | Integración | Notifications | Endpoint legacy de envío directo traduce errores SMTP | 3 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
-| CU-I-NO-05 | Integración | Notifications | Eventos de solicitud y preparación de expediente se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
-| CU-I-NO-06 | Integración | Notifications | Eventos documentales se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
+| CU-I-NO-03 | Integración | Notifications | Controller de reintento traduce resultado operacional | 2 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
+| CU-I-NO-04 | Integración | Notifications | Eventos de solicitud y expediente se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
+| CU-I-NO-05 | Integración | Notifications | Eventos documentales se persisten en modo simulado | 1 | [`modules/notifications-integracion.md`](modules/notifications-integracion.md) |
 | CU-E2E-NO-01 | End-to-end | Notifications | Usuario consulta notificaciones generadas por una práctica | Pendiente | [`modules/notifications-end-to-end.md`](modules/notifications-end-to-end.md) |
 | CU-E2E-NO-02 | End-to-end | Notifications | Flujo documental genera notificaciones visibles para participantes | Pendiente | [`modules/notifications-end-to-end.md`](modules/notifications-end-to-end.md) |
 | CU-E2E-NO-03 | End-to-end | Notifications | Reintento operativo de notificación fallida | Pendiente | [`modules/notifications-end-to-end.md`](modules/notifications-end-to-end.md) |
+| CU-U-PL-01 | Unitaria | Presentation letters | Dirección gestiona plantillas de cartas | 3 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-PL-02 | Unitaria | Presentation letters | Estudiante genera carta con datos reales y notificación | 1 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-PL-03 | Unitaria | Presentation letters | Carta de Práctica II usa contenido diferenciado | 1 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-PL-04 | Unitaria | Presentation letters | Contexto DOCX conserva campos textuales de plantilla | 1 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-PL-05 | Unitaria | Presentation letters | Generación falla con error claro si no hay plantilla activa | 1 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-PL-06 | Unitaria | Presentation letters | Descarga autenticada respeta propiedad de la carta | 2 | [`modules/presentation-letters-unitarias.md`](modules/presentation-letters-unitarias.md) |
+| CU-U-SC-01 | Unitaria | Scheduling | Administración publica y mantiene disponibilidad futura | 5 | [`modules/scheduling-unitarias.md`](modules/scheduling-unitarias.md) |
+| CU-U-SC-02 | Unitaria | Scheduling | Reserva de cita valida práctica y duplicados | 3 | [`modules/scheduling-unitarias.md`](modules/scheduling-unitarias.md) |
+| CU-U-SC-03 | Unitaria | Scheduling | Cancelación y reprogramación respetan actor y tipo de cita | 4 | [`modules/scheduling-unitarias.md`](modules/scheduling-unitarias.md) |
+| CU-U-SC-04 | Unitaria | Scheduling | Resultado de cita actualiza avance y cierre de práctica | 3 | [`modules/scheduling-unitarias.md`](modules/scheduling-unitarias.md) |
+| CU-U-SE-01 | Unitaria | Self evaluations | Formulario se habilita según últimos días hábiles y estado de práctica | 3 | [`modules/self-evaluations-unitarias.md`](modules/self-evaluations-unitarias.md) |
+| CU-U-SE-02 | Unitaria | Self evaluations | Estudiante guarda borrador y envío queda bloqueado | 3 | [`modules/self-evaluations-unitarias.md`](modules/self-evaluations-unitarias.md) |
+| CU-U-SE-03 | Unitaria | Self evaluations | Reapertura administrativa conserva trazabilidad | 1 | [`modules/self-evaluations-unitarias.md`](modules/self-evaluations-unitarias.md) |
+| CU-U-SV-01 | Unitaria | Supervisor evaluations | Invitación de supervisor exige práctica aprobada y autoevaluación enviada | 3 | [`modules/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations-unitarias.md) |
+| CU-U-SV-02 | Unitaria | Supervisor evaluations | Formulario público expone datos mínimos y valida vigencia | 3 | [`modules/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations-unitarias.md) |
+| CU-U-SV-03 | Unitaria | Supervisor evaluations | Envío público consume token e impide reutilización | 1 | [`modules/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations-unitarias.md) |
+| CU-U-SV-04 | Unitaria | Supervisor evaluations | Lectura de evaluaciones y asignaciones respeta permisos | 2 | [`modules/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations-unitarias.md) |
 
 ## Archivos
 
@@ -187,6 +202,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | `modules/auth-unitarias.md` | Casos unitarios del módulo `auth`. |
 | `modules/auth-integracion.md` | Casos de integración del módulo `auth`. |
 | `modules/auth-end-to-end.md` | Flujos end-to-end documentados del módulo `auth`. |
+| `modules/data-portability-unitarias.md` | Casos unitarios del módulo `data_portability`. |
 | `modules/documents-unitarias.md` | Casos unitarios del módulo `documents`. |
 | `modules/documents-integracion.md` | Casos de integración del módulo `documents`. |
 | `modules/documents-end-to-end.md` | Flujos end-to-end documentados del módulo `documents`. |
@@ -196,3 +212,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | `modules/notifications-unitarias.md` | Casos unitarios del módulo `notifications`. |
 | `modules/notifications-integracion.md` | Casos de integración del módulo `notifications`. |
 | `modules/notifications-end-to-end.md` | Flujos end-to-end documentados del módulo `notifications`. |
+| `modules/presentation-letters-unitarias.md` | Casos unitarios del módulo `presentation_letters`. |
+| `modules/scheduling-unitarias.md` | Casos unitarios del módulo `scheduling`. |
+| `modules/self-evaluations-unitarias.md` | Casos unitarios del módulo `self_evaluations`. |
+| `modules/supervisor-evaluations-unitarias.md` | Casos unitarios del módulo `supervisor_evaluations`. |

@@ -2,82 +2,59 @@
 
 ## Alcance
 
-Estos casos documentan las pruebas de valor del módulo `admin`. El foco está en consultas administrativas, filtros del dashboard, detalle de prácticas, gestión de requisitos académicos, registro institucional de seguro escolar, permisos y traducción de errores del controller.
+Estos casos documentan pruebas de integración liviana del módulo `admin` centradas en dependencias de autorización usadas por los endpoints administrativos y de reportes.
 
-Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos de negocio verificables con una o más pruebas automatizadas.
+Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos de autorización verificables.
 
 ## Integración
 
-### CU-I-AD-01: Roles autorizados para seguro escolar
+### CU-I-AD-01: Roles de lectura administrativa permiten decisión académica
 
 - Tipo de prueba: Integración
 - Dominio: Admin
-- Contexto: La gestión de seguro escolar queda bajo responsabilidad de `Director de carrera`.
-- Objetivo: Validar que la dependencia de roles permite a `Director de carrera` y rechaza a `Encargado de practica` y estudiantes.
-- Escenario: Usuarios con distintos roles intentan pasar la dependencia de autorización.
+- Contexto: Los endpoints de lectura administrativa son consumidos por roles que toman decisiones sobre prácticas.
+- Objetivo: Validar que `Encargado de practica` y `Director de carrera` pasan la dependencia de roles, mientras roles no decisores son rechazados.
+- Escenario: Usuarios con distintos roles ejecutan la dependencia `require_roles` configurada para lectura admin.
 - Variantes cubiertas:
+  - `Encargado de practica` autorizado.
   - `Director de carrera` autorizado.
-  - `Encargado de practica` rechazado con `403`.
-  - `Estudiante` rechazado con `403`.
-- Resultado esperado: Solo Dirección de carrera pasa la validación.
-- Valor de negocio: Evita que estudiantes o coordinación modifiquen una validación que corresponde a Dirección.
+  - Secretaría, estudiante, supervisor, FICA y Superadmin rechazados para este alcance.
+- Resultado esperado: Solo roles de decisión académica pasan la validación.
+- Valor de negocio: Evita exposición de vistas administrativas a roles no autorizados.
+- Pruebas automatizadas:
+  - `tests/modules/admin/test_admin_router.py::test_admin_read_roles_are_authorized`
+  - `tests/modules/admin/test_admin_router.py::test_admin_read_rejects_non_decision_roles`
+
+### CU-I-AD-02: Seguro escolar queda restringido a Dirección de carrera
+
+- Tipo de prueba: Integración
+- Dominio: Admin
+- Contexto: La validación de seguro escolar por solicitud corresponde a Dirección de carrera.
+- Objetivo: Validar que solo `Director de carrera` pasa la dependencia de roles para seguro escolar.
+- Escenario: Usuarios con roles de dirección, coordinación y estudiante intentan pasar la autorización.
+- Variantes cubiertas:
+  - Director autorizado.
+  - Encargado de práctica rechazado.
+  - Estudiante rechazado.
+- Resultado esperado: Solo Dirección puede validar seguro escolar administrativo.
+- Valor de negocio: Evita que estudiantes o coordinación modifiquen una validación institucional sensible.
 - Pruebas automatizadas:
   - `tests/modules/admin/test_admin_router.py::test_school_insurance_director_role_is_authorized`
   - `tests/modules/admin/test_admin_router.py::test_school_insurance_coordinator_role_is_rejected`
   - `tests/modules/admin/test_admin_router.py::test_school_insurance_student_role_is_rejected`
 
-### CU-I-AD-02: Detalle de práctica inexistente se traduce a 404
+### CU-I-AD-03: Reportes administrativos usan roles propios de análisis
 
 - Tipo de prueba: Integración
-- Dominio: Admin
-- Contexto: El service devuelve `None` cuando una práctica no existe; el controller debe traducirlo a HTTP.
-- Objetivo: Validar que el endpoint administrativo no devuelve una respuesta vacía para recursos inexistentes.
-- Escenario: Se solicita detalle de una práctica inexistente.
+- Dominio: Admin / Reports
+- Contexto: Los reportes agregados se consumen por FICA, coordinación y Dirección.
+- Objetivo: Validar autorización para reportes y rechazo de roles no consumidores.
+- Escenario: Usuarios con roles autorizados y no autorizados ejecutan la dependencia de reportes.
 - Variantes cubiertas:
-  - Service retorna `None`.
-- Resultado esperado: El controller responde `404 Not Found`.
-- Valor de negocio: Da una señal clara al frontend y evita mostrar detalles inexistentes.
+  - `FICA`, `Encargado de practica` y `Director de carrera` autorizados.
+  - Secretaría, estudiante, supervisor y Superadmin rechazados.
+- Resultado esperado: Solo roles definidos para reportes pasan la validación.
+- Valor de negocio: Controla acceso a métricas agregadas de gestión.
 - Pruebas automatizadas:
-  - `tests/modules/admin/test_admin_router.py::test_get_internship_detail_returns_404_when_missing`
-
-### CU-I-AD-03: Transición inválida se traduce a 400
-
-- Tipo de prueba: Integración
-- Dominio: Admin
-- Contexto: El service expresa transiciones inválidas como `ValueError`; el contrato HTTP debe exponerlas como error de solicitud.
-- Objetivo: Validar la traducción controller-service para cambios inválidos de requisito académico.
-- Escenario: Se intenta actualizar un requisito con una transición no permitida.
-- Variantes cubiertas:
-  - Service lanza `ValueError`.
-- Resultado esperado: El controller responde `400 Bad Request`.
-- Valor de negocio: Permite al frontend distinguir error de reglas de negocio frente a recurso inexistente.
-- Pruebas automatizadas:
-  - `tests/modules/admin/test_admin_router.py::test_update_student_requirement_returns_400_for_invalid_transition`
-
-### CU-I-AD-04: Requisito académico inexistente se traduce a 404
-
-- Tipo de prueba: Integración
-- Dominio: Admin
-- Contexto: Actualizar un requisito inexistente debe informarse como recurso no encontrado.
-- Objetivo: Validar que el controller traduce `None` del service a `404`.
-- Escenario: Se intenta actualizar un requisito académico que no pertenece al estudiante o no existe.
-- Variantes cubiertas:
-  - Service retorna `None`.
-- Resultado esperado: El controller responde `404 Not Found`.
-- Valor de negocio: Evita que el frontend interprete como éxito una actualización que no ocurrió.
-- Pruebas automatizadas:
-  - `tests/modules/admin/test_admin_router.py::test_update_student_requirement_returns_404_when_missing`
-
-### CU-I-AD-05: Seguro escolar de usuario no estudiante se traduce a 404
-
-- Tipo de prueba: Integración
-- Dominio: Admin
-- Contexto: El service retorna `None` si el usuario no existe o no es estudiante.
-- Objetivo: Validar que el endpoint de seguro escolar mantiene un contrato HTTP consistente para usuarios no aplicables.
-- Escenario: Un rol autorizado intenta registrar seguro escolar para un usuario que no es estudiante.
-- Variantes cubiertas:
-  - Service retorna `None`.
-- Resultado esperado: El controller responde `404 Not Found`.
-- Valor de negocio: Evita crear prerrequisitos institucionales para usuarios incorrectos.
-- Pruebas automatizadas:
-  - `tests/modules/admin/test_admin_router.py::test_school_insurance_returns_404_for_non_student`
+  - `tests/modules/admin/test_admin_report_service.py::test_admin_report_roles_are_authorized`
+  - `tests/modules/admin/test_admin_report_service.py::test_admin_report_rejects_non_report_roles`

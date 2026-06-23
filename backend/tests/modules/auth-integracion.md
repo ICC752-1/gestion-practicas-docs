@@ -22,73 +22,59 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_rejects_refresh_token`
 
-### CU-I-AU-02: `get_current_user` valida access token y usuario vigente
+### CU-I-AU-02: Controller de login expone contrato de sesión
 
 - Tipo de prueba: Integración
 - Dominio: Auth
-- Contexto: La dependencia `get_current_user` es la base de autorización de todos los endpoints protegidos.
-- Objetivo: Validar acceso exitoso con access token y rechazo de payload inválido, usuario inexistente o usuario inactivo.
-- Escenario: Se resuelve el usuario autenticado desde un Bearer token.
+- Contexto: El endpoint `/auth/login` autentica credenciales JSON y debe emitir una sesión usable por navegador sin exponer detalles ante errores.
+- Objetivo: Validar emisión de tokens, cookie HTTP-only de refresh y traducción de errores relevantes.
+- Escenario: Se llama al controller de login con credenciales válidas, credenciales inválidas y usuario con password temporal pendiente.
 - Variantes cubiertas:
-  - Access token válido retorna usuario activo.
-  - Error de decode devuelve `401`.
-  - Payload sin `sub` o con `sub` inválido devuelve `401`.
-  - Usuario inexistente devuelve `401`.
-  - Usuario inactivo devuelve `401`.
-- Resultado esperado: Access token válido retorna usuario activo; casos inválidos devuelven `401`.
-- Valor de negocio: Protege todos los módulos que dependen de autenticación.
-- Pruebas automatizadas:
-  - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_returns_active_user_from_access_token`
-  - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_rejects_decode_errors`
-  - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_rejects_invalid_subject`
-  - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_rejects_missing_user`
-  - `tests/modules/auth/test_auth_dependency.py::test_get_current_user_rejects_inactive_user`
-
-### CU-I-AU-03: Controller de login traduce credenciales inválidas
-
-- Tipo de prueba: Integración
-- Dominio: Auth
-- Contexto: El endpoint `/auth/login` expone errores de credenciales al frontend.
-- Objetivo: Validar que credenciales inválidas se traducen a `401 Unauthorized` sin filtrar detalles.
-- Escenario: Se llama al controller de login con email o password inválidos.
-- Variantes cubiertas:
-  - Login con JSON `email` y `password` válido retorna tokens.
+  - Login válido retorna access token, refresh token y setea cookie HTTP-only.
   - Credenciales inválidas devuelven `401` con mensaje genérico.
-- Resultado esperado: El endpoint devuelve `401` con mensaje genérico.
-- Valor de negocio: Evita enumeración de usuarios y mantiene contrato HTTP claro.
+  - Password temporal pendiente devuelve `403` con contrato específico para cambio obligatorio.
+- Resultado esperado: El login válido emite sesión y los errores se traducen sin filtrar detalles sensibles.
+- Valor de negocio: Protege el punto de entrada principal y mantiene contrato compatible con clientes web.
 - Pruebas automatizadas:
-  - `tests/modules/auth/test_auth_router.py::test_login_returns_tokens_for_valid_json_credentials`
+  - `tests/modules/auth/test_auth_router.py::test_login_returns_tokens_and_sets_refresh_cookie`
   - `tests/modules/auth/test_auth_router.py::test_login_returns_401_for_invalid_credentials`
+  - `tests/modules/auth/test_auth_router.py::test_login_returns_403_for_temporary_password`
 
-### CU-I-AU-04: Controller de refresh traduce refresh inválido
+### CU-I-AU-03: Controller de refresh renueva sesión desde body o cookie
 
 - Tipo de prueba: Integración
 - Dominio: Auth
-- Contexto: El endpoint `/auth/refresh` debe comunicar refresh inválido o expirado como falta de autorización.
-- Objetivo: Validar la traducción `ValueError` del service a `401 Unauthorized`.
-- Escenario: Se llama al controller con refresh token inválido.
+- Contexto: El endpoint `/auth/refresh` debe aceptar refresh token desde body o cookie HTTP-only y renovar la cookie cuando emite sesión nueva.
+- Objetivo: Validar fuentes admitidas de refresh token, cookie de salida y rechazo de token ausente o inválido.
+- Escenario: Se llama al controller con refresh token en body, desde cookie o sin token válido.
 - Variantes cubiertas:
-  - Refresh inválido en service se traduce a `401`.
-- Resultado esperado: El endpoint devuelve `401` y no emite tokens nuevos.
-- Valor de negocio: Protege renovación de sesión frente a tokens inválidos.
+  - Refresh desde body emite nuevos tokens y setea cookie actualizada.
+  - Refresh desde cookie se usa cuando el body no contiene token.
+  - Token ausente o inválido devuelve `401`.
+- Resultado esperado: Solo un refresh token disponible y válido renueva la sesión; casos inválidos no emiten tokens nuevos.
+- Valor de negocio: Soporta clientes web seguros y evita renovaciones sin credencial válida.
 - Pruebas automatizadas:
-  - `tests/modules/auth/test_auth_router.py::test_refresh_returns_401_for_invalid_refresh_token`
+  - `tests/modules/auth/test_auth_router.py::test_refresh_uses_body_token_and_sets_new_cookie`
+  - `tests/modules/auth/test_auth_router.py::test_refresh_uses_cookie_when_body_token_is_missing`
+  - `tests/modules/auth/test_auth_router.py::test_refresh_returns_401_for_missing_or_invalid_token`
 
-### CU-I-AU-05: Controller de logout traduce refresh inválido
+### CU-I-AU-04: Controller de logout revoca sesión y limpia cookie
 
 - Tipo de prueba: Integración
 - Dominio: Auth
-- Contexto: Logout requiere Bearer token válido y puede recibir refresh token opcional para revocación.
-- Objetivo: Validar que refresh token inválido en logout se traduce a `400 Bad Request`.
-- Escenario: Usuario autenticado intenta logout con refresh token inválido o ajeno.
+- Contexto: Logout debe revocar el refresh token enviado y limpiar la cookie del navegador.
+- Objetivo: Validar cierre de sesión correcto y traducción de refresh inválido a error de contrato.
+- Escenario: Usuario autenticado ejecuta logout con refresh válido o inválido.
 - Variantes cubiertas:
+  - Logout válido revoca refresh token y limpia cookie.
   - Refresh inválido en logout se traduce a `400`.
-- Resultado esperado: El endpoint devuelve `400` y no revoca tokens ajenos.
-- Valor de negocio: Evita operaciones inconsistentes de cierre de sesión.
+- Resultado esperado: Logout exitoso devuelve `204`; refresh inválido no revoca tokens ajenos.
+- Valor de negocio: Permite cierre de sesión seguro y consistente entre backend y navegador.
 - Pruebas automatizadas:
+  - `tests/modules/auth/test_auth_router.py::test_logout_revokes_refresh_token_and_clears_cookie`
   - `tests/modules/auth/test_auth_router.py::test_logout_returns_400_for_invalid_refresh_token`
 
-### CU-I-AU-06: `/auth/me` no expone credenciales ni campos sensibles
+### CU-I-AU-05: `/auth/me` no expone credenciales ni campos sensibles
 
 - Tipo de prueba: Integración
 - Dominio: Auth
@@ -103,22 +89,40 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Pruebas automatizadas:
   - `tests/modules/auth/test_auth_router.py::test_get_me_returns_current_user_without_sensitive_fields`
 
+### CU-I-AU-06: Activación de cuenta expone contrato de estado inicial
+
+- Tipo de prueba: Integración
+- Dominio: Auth
+- Contexto: Usuarios creados administrativamente pueden activar su cuenta y consultar datos mínimos de activación antes de definir contraseña.
+- Objetivo: Validar que el controller delega activación, retorna información segura y traduce errores de token.
+- Escenario: Se activa una cuenta o se consulta información de activación con token válido e inválido.
+- Variantes cubiertas:
+  - Activación válida devuelve `204` y pasa datos requeridos al servicio.
+  - Error de activación se traduce a `400`.
+  - Consulta de información retorna email, roles y datos iniciales.
+  - Error de consulta se traduce a `400`.
+- Resultado esperado: El flujo expone solo datos necesarios y mantiene errores controlados para tokens inválidos o expirados.
+- Valor de negocio: Soporta onboarding seguro sin passwords temporales reutilizables.
+- Pruebas automatizadas:
+  - `tests/modules/auth/test_auth_router.py::test_activate_account_delegates_and_maps_activation_errors`
+  - `tests/modules/auth/test_auth_router.py::test_activation_info_returns_data_and_maps_activation_errors`
+
 ### CU-I-AU-07: Google controller maneja cookie, state y redirect
 
 - Tipo de prueba: Integración
 - Dominio: Auth
-- Contexto: El controller de Google OAuth agrega protección CSRF mediante cookie `state` y redirige al frontend.
-- Objetivo: Validar que login setea cookie HTTP-only, callback inválido limpia cookie y callback exitoso redirige correctamente.
+- Contexto: El controller de Google OAuth agrega protección CSRF mediante cookie `state`, redirige al frontend y entrega refresh token como cookie HTTP-only.
+- Objetivo: Validar que login setea cookie HTTP-only, callback inválido limpia cookie, callback exitoso redirige correctamente y persiste refresh en cookie.
 - Escenario: Se ejecuta flujo controller de Google login/callback.
 - Variantes cubiertas:
   - Login redirige a Google y setea cookie `state` HTTP-only.
   - Callback con state inconsistente redirige a error y limpia cookie.
-  - Callback exitoso redirige con token y limpia cookie.
+  - Callback exitoso redirige con access token, limpia cookie de state y setea refresh cookie.
   - Error controlado del service redirige a error y limpia cookie.
-- Resultado esperado: La cookie de state se gestiona correctamente y los redirects contienen éxito o error según corresponda.
+- Resultado esperado: La cookie de state se gestiona correctamente, el refresh token queda en cookie HTTP-only y los redirects contienen éxito o error según corresponda.
 - Valor de negocio: Protege el flujo OAuth navegador-backend-frontend.
 - Pruebas automatizadas:
   - `tests/modules/auth/test_auth_router.py::test_google_login_redirects_and_sets_http_only_state_cookie`
   - `tests/modules/auth/test_auth_router.py::test_google_callback_state_mismatch_redirects_error_and_clears_cookie`
-  - `tests/modules/auth/test_auth_router.py::test_google_callback_success_redirects_token_and_clears_cookie`
+  - `tests/modules/auth/test_auth_router.py::test_google_callback_success_redirects_token_and_sets_refresh_cookie`
   - `tests/modules/auth/test_auth_router.py::test_google_callback_service_error_redirects_error_and_clears_cookie`

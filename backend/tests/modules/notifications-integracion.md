@@ -2,24 +2,24 @@
 
 ## Alcance
 
-Estos casos documentan las pruebas de valor del módulo `notifications`. El foco está en persistencia de notificaciones, modos de despacho `simulated` y `real`, reintentos operativos, permisos de consulta, endpoint legacy de envío SMTP directo, contratos de eventos y seguridad del contenido HTML generado.
+Estos casos documentan las pruebas de integración liviana del módulo `notifications`. El foco está en contratos del controller para bandeja personal, detalle privado, reintento y eventos generados por otros servicios.
 
-Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos verificables que protegen reglas operativas o contratos relevantes del sistema.
+Los casos agrupan variantes automatizadas relacionadas. No representan una prueba por función, sino comportamientos verificables que protegen privacidad y comunicación del sistema.
 
 ## Integración
 
-### CU-I-NO-01: Usuario autenticado lista sus notificaciones
+### CU-I-NO-01: Usuario autenticado lista su bandeja de notificaciones
 
 - Tipo de prueba: Integración
 - Dominio: Notifications
 - Contexto: El listado de notificaciones es una bandeja personal asociada al usuario autenticado.
-- Objetivo: Validar que el controller consulta notificaciones usando `current_user.id` y respeta paginación.
-- Escenario: Un usuario autenticado solicita su listado con `limit` y `offset`.
+- Objetivo: Validar que el controller consulta notificaciones usando `current_user.id`, paginación y contadores.
+- Escenario: Un usuario autenticado solicita su listado.
 - Variantes cubiertas:
-  - Consulta delegada al service con usuario autenticado.
-  - Parámetros de paginación se propagan.
-- Resultado esperado: Se retornan solo las notificaciones del usuario consultado por el service.
-- Valor de negocio: Protege la separación de bandejas entre usuarios.
+  - Se retornan items propios.
+  - Se informa total y contador de no leídas.
+- Resultado esperado: La bandeja se construye desde el usuario autenticado.
+- Valor de negocio: Protege separación de bandejas entre usuarios.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_controller.py::TestListNotifications::test_list_returns_notifications_for_authenticated_user`
 
@@ -32,8 +32,8 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - Escenario: Se consulta una notificación propia, una ajena y una inexistente.
 - Variantes cubiertas:
   - Usuario destinatario accede al detalle.
-  - Usuario no destinatario recibe `403 Forbidden`.
-  - Notificación inexistente devuelve `404 Not Found`.
+  - Usuario no destinatario recibe `403`.
+  - Notificación inexistente devuelve `404`.
 - Resultado esperado: Solo el destinatario puede ver el detalle de su notificación.
 - Valor de negocio: Evita exposición de información administrativa entre usuarios.
 - Pruebas automatizadas:
@@ -45,56 +45,36 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 
 - Tipo de prueba: Integración
 - Dominio: Notifications
-- Contexto: El endpoint de reintento debe exponer de forma clara si el reenvío funcionó, falló o no era elegible.
+- Contexto: El endpoint de reintento debe exponer de forma clara si el reenvío funcionó o no era elegible.
 - Objetivo: Validar la traducción controller-service para reintentos manuales.
-- Escenario: Un rol autorizado reintenta una notificación y el service retorna éxito, fallo o `None`.
+- Escenario: Un rol autorizado reintenta una notificación y el service retorna éxito o `None`.
 - Variantes cubiertas:
   - Reintento exitoso responde `success=True`.
-  - Reintento ejecutado pero fallido responde `success=False` con estado `failed`.
   - Notificación inexistente o no elegible responde `404`.
 - Resultado esperado: La respuesta HTTP comunica correctamente el resultado operacional.
 - Valor de negocio: Da feedback confiable a roles administrativos que recuperan envíos fallidos.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_controller.py::TestRetryNotification::test_retry_returns_response_on_success`
-  - `tests/modules/notifications/test_notification_controller.py::TestRetryNotification::test_retry_returns_failed_response_when_smtp_retry_fails`
   - `tests/modules/notifications/test_notification_controller.py::TestRetryNotification::test_retry_returns_404_when_notification_not_found`
 
-### CU-I-NO-04: Endpoint legacy de envío directo traduce errores SMTP
-
-- Tipo de prueba: Integración
-- Dominio: Notifications
-- Contexto: `POST /notifications/send-email` es un flujo legacy de SMTP directo que no persiste notificaciones, pero sigue expuesto a roles administrativos.
-- Objetivo: Validar que el controller responde correctamente ante éxito, falta de mailer y fallos inesperados.
-- Escenario: Un rol autorizado solicita envío directo con un payload válido.
-- Variantes cubiertas:
-  - Envío directo exitoso devuelve respuesta positiva.
-  - Mailer no configurado devuelve `400 Bad Request`.
-  - Error SMTP inesperado devuelve `500 Internal Server Error`.
-- Resultado esperado: El endpoint no oculta fallos de configuración ni errores operativos.
-- Valor de negocio: Permite diagnosticar correctamente un flujo legacy sin confundirlo con notificaciones persistentes.
-- Pruebas automatizadas:
-  - `tests/modules/notifications/test_notification_controller.py::TestSendNotification::test_send_notification_returns_success_on_smtp_send`
-  - `tests/modules/notifications/test_notification_controller.py::TestSendNotification::test_send_notification_returns_400_when_mailer_is_not_configured`
-  - `tests/modules/notifications/test_notification_controller.py::TestSendNotification::test_send_notification_returns_500_on_unexpected_smtp_error`
-
-### CU-I-NO-05: Eventos de solicitud y preparación de expediente se persisten en modo simulado
+### CU-I-NO-04: Eventos de solicitud y expediente se persisten en modo simulado
 
 - Tipo de prueba: Integración
 - Dominio: Notifications / Internships
-- Contexto: Las acciones sobre solicitudes de práctica y preparación local del expediente para DIRAE generan notificaciones para comunicación interna y al estudiante.
+- Contexto: Las acciones sobre solicitudes y expediente DIRAE generan notificaciones.
 - Objetivo: Validar que el flujo real de servicios produce y persiste eventos esperados sin SMTP real.
-- Escenario: Se crea una solicitud de práctica y luego se aprueba, rechaza y prepara su expediente local usando servicios de dominio con repositorio de notificaciones en memoria.
+- Escenario: Se crea una solicitud, se aprueba, se rechaza y se deriva expediente con repositorio de notificaciones en memoria.
 - Variantes cubiertas:
-  - Solicitud de práctica creada genera evento `internship_created` como `custom`.
-  - Aprobación de solicitud genera `internship_approved`.
-  - Rechazo de solicitud conserva motivo en payload.
-  - Preparación del expediente local conserva motivo en payload.
+  - Solicitud creada genera evento `internship_created`.
+  - Aprobación genera `internship_approved`.
+  - Rechazo conserva motivo en payload.
+  - Derivación conserva motivo en payload.
 - Resultado esperado: Todas las notificaciones se persisten con estado `simulated` y payload funcional correcto.
-- Valor de negocio: Protege la comunicación asociada al ciclo administrativo de solicitudes y a la preparación local del expediente que luego se tramita externamente.
+- Valor de negocio: Protege comunicación asociada al ciclo administrativo de prácticas.
 - Pruebas automatizadas:
   - `tests/modules/notifications/test_notification_event_integration.py::test_internship_lifecycle_events_are_persisted_in_simulated_mode`
 
-### CU-I-NO-06: Eventos documentales se persisten en modo simulado
+### CU-I-NO-05: Eventos documentales se persisten en modo simulado
 
 - Tipo de prueba: Integración
 - Dominio: Notifications / Documents
