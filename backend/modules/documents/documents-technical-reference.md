@@ -104,8 +104,8 @@ Los tipos documentales seed actuales son:
 
 | Tipo documental | Requerido | Categoría |
 | --- | --- | --- |
-| `Formulario de inscripción` | Sí | `Académico`. |
-| `Carta de aceptación` | Sí | `Administrativo`. |
+| `Formulario de inscripción` | No | `Académico`. |
+| `Carta de aceptación` | No | `Administrativo`. |
 | `Seguro escolar` | No | `Administrativo`. |
 | `Documento complementario` | No | `Administrativo`. |
 

@@ -549,10 +549,10 @@ La preparación local del expediente se expresa por transiciones internas de
 
 | Marca interna origen | Marca interna destino permitido | Condición |
 | --- | --- | --- |
-| `not_started` | `in_review` | Solicitud `Aprobada` y `completion_status=finalized`. |
-| `in_review` | `observed`, `ready` | Revisión documental local. |
-| `observed` | `in_review` | Rectificación documental. |
-| `ready` | `exported` | Exportación CSV generada correctamente. No confirma recepción externa. |
+| `not_started` | `in_review` | Solicitud `Aprobada` y `completion_status=finalized` (al derivar). |
+| `in_review` | `observed`, `ready` | Revisión documental local. Transiciona a `ready` automáticamente cuando todos los documentos requeridos están aprobados (y no quedan pendientes de revisión o con observaciones), y a `observed` si se añade alguna observación. |
+| `observed` | `in_review`, `ready` | Rectificación documental. Transiciona a `in_review` si hay archivos nuevos por revisar, y a `ready` automáticamente si todo queda aprobado. |
+| `ready` | `exported`, `observed`, `in_review` | Exportación CSV generada correctamente. Si se vuelve a subir, borrar o modificar el estado de algún documento, retorna a `in_review` u `observed` automáticamente. |
 
 #### Permisos de acción
 
