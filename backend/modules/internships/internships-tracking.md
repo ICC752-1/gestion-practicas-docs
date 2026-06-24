@@ -20,12 +20,14 @@
 
 ## Resumen operativo
 
-El tracking disponible en el backend tiene dos vistas complementarias:
+El tracking disponible en el backend tiene tres vistas complementarias:
 
 - **Historial cronológico administrativo:** muestra cómo ha cambiado el estado
   funcional de la solicitud y qué actor ejecutó o disparó cada cambio.
 - **Seguimiento agregado de ciclo de vida:** resume solicitud, ejecución,
   autoevaluación, evaluación del supervisor, presentación final y cierre.
+- **Historial DIRAE local:** muestra cambios de `dirae_status` usados para
+  preparación, rectificación y exportación documental local.
 
 **Permite:**
 
@@ -37,6 +39,7 @@ El tracking disponible en el backend tiene dos vistas complementarias:
 - Reconstruir la secuencia funcional de revisión de una práctica.
 - Consultar avance funcional agregado para dashboards de estudiante y
   administración.
+- Consultar historial local del expediente DIRAE sin consultar sistemas externos.
 
 > [!IMPORTANT]
 > Este tracking es trazabilidad funcional del flujo de prácticas. No reemplaza la
@@ -52,12 +55,16 @@ La implementación real vive en `internships`:
 
 - Endpoint: `GET /internships/{internship_id}/tracking`.
 - Endpoint: `GET /internships/{internship_id}/lifecycle-tracking`.
+- Endpoint: `GET /internships/{internship_id}/dirae-tracking`.
 - Modelo: `InternshipStatusHistory`.
+- Modelo: `InternshipDiraeStatusHistory`.
 - Schemas de respuesta: `InternshipTrackingResponse`,
-  `InternshipLifecycleResponse`.
+  `InternshipLifecycleResponse`, `InternshipDiraeStatusHistoryResponse`.
 - Persistencia del historial administrativo: tabla
   `internship_status_history`. El seguimiento agregado se calcula a partir de
   varias fuentes del dominio y no persiste una tabla propia.
+- Persistencia del historial DIRAE local: tabla
+  `internship_dirae_status_history`.
 
 > [!WARNING]
 > No existe endpoint `/tracking`. Cualquier cambio que convierta `tracking` en un
@@ -70,6 +77,7 @@ La implementación real vive en `internships`:
 
 - Exponer el historial de estados de una práctica.
 - Exponer un seguimiento agregado del ciclo real de práctica.
+- Exponer historial local de preparación/exportación DIRAE.
 - Mantener orden cronológico de las transiciones.
 - Mostrar información básica del actor de la transición.
 - Mostrar motivo funcional y metadata asociada.
@@ -78,7 +86,7 @@ La implementación real vive en `internships`:
 #### Fuera de alcance
 
 - Métricas o analítica avanzada del proceso.
-- Seguimiento documental del módulo `documents`.
+- Seguimiento externo del trámite en DIRAE.
 - Seguimiento de notificaciones.
 - Auditoría técnica de requests, sesiones o errores.
 - Registro general de actividad de usuario.
@@ -89,10 +97,11 @@ La implementación real vive en `internships`:
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
 | Placeholder | `app/modules/tracking/.../__init__.py` | Declara estructura futura sin implementación funcional actual. |
-| Controller real | `app/modules/internships/controllers/internship_controller.py` | Expone `GET /internships/{internship_id}/tracking` y `GET /internships/{internship_id}/lifecycle-tracking`; valida permisos de lectura. |
-| Service real | `app/modules/internships/services/internship_service.py` | Delega historial mediante `list_internship_tracking` y calcula ciclo de vida mediante `get_lifecycle_tracking`. |
-| Repository real | `app/modules/internships/repositories/internship_repository.py` | Consulta `InternshipStatusHistory`, autoevaluación, evaluación supervisor, invitaciones y presentaciones. |
+| Controller real | `app/modules/internships/controllers/internship_controller.py` | Expone `GET /internships/{internship_id}/tracking`, `GET /internships/{internship_id}/lifecycle-tracking` y `GET /internships/{internship_id}/dirae-tracking`; valida permisos de lectura. |
+| Service real | `app/modules/internships/services/internship_service.py` | Delega historial mediante `list_internship_tracking`, `list_internship_dirae_tracking` y calcula ciclo de vida mediante `get_lifecycle_tracking`. |
+| Repository real | `app/modules/internships/repositories/internship_repository.py` | Consulta `InternshipStatusHistory`, `InternshipDiraeStatusHistory`, autoevaluación, evaluación supervisor, invitaciones y presentaciones. |
 | Model real | `app/modules/internships/models/internship_status_history_model.py` | Persiste cada transición funcional de estado. |
+| Model real | `app/modules/internships/models/internship_dirae_status_history_model.py` | Persiste cambios locales de `dirae_status`. |
 | Schema real | `app/modules/internships/schemas/internship_schema.py` | Define `InternshipTrackingResponse`, `InternshipLifecycleResponse` y schemas anidados. |
 
 ## Funcionalidad principal
@@ -121,12 +130,24 @@ La implementación real vive en `internships`:
    evaluación del supervisor, presentaciones finales y campos de cierre.
 8. Se retorna `InternshipLifecycleResponse`.
 
+#### Consulta de tracking DIRAE local
+
+1. El usuario llama a `GET /internships/{internship_id}/dirae-tracking`.
+2. El controller valida Bearer token.
+3. Se busca la práctica por `internship_id`.
+4. Si la práctica no existe, se responde `404`.
+5. Se valida que el usuario sea propietario o tenga rol privilegiado de lectura.
+6. Si no tiene permisos, se responde `403`.
+7. El service solicita el historial DIRAE local al repository.
+8. Se retorna una lista de `InternshipDiraeStatusHistoryResponse`.
+
 ## Endpoint disponible
 
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | GET | `/internships/{internship_id}/tracking` | Lista el historial cronológico de estados de una práctica. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/lifecycle-tracking` | Resume el avance completo de solicitud, ejecución, evaluaciones, presentación y cierre. | Propietario o rol privilegiado |
+| GET | `/internships/{internship_id}/dirae-tracking` | Lista cambios locales del expediente DIRAE. | Propietario o rol privilegiado |
 
 Roles privilegiados de lectura:
 
@@ -169,6 +190,30 @@ Representa una entrada del historial funcional de una práctica.
     "action": "approve",
     "skip_review": false
   }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>InternshipDiraeStatusHistoryResponse</strong></summary>
+
+Representa una transición local de `dirae_status`. No consulta ni confirma el estado externo del trámite DIRAE.
+
+```json
+{
+  "id": 5,
+  "internship_id": 7,
+  "previous_status": "ready",
+  "new_status": "exported",
+  "actor": {
+    "id": 99,
+    "email": "secretaria@ufro.cl",
+    "first_name": "Ana",
+    "last_name": "Rojas"
+  },
+  "reason": "dirae_document_package_exported",
+  "changed_at": "2026-06-24T12:30:00Z"
 }
 ```
 
@@ -237,6 +282,8 @@ Relaciones principales:
 > En el modelo ORM el campo se llama `metadata_json`, pero en la respuesta HTTP se
 > expone como `metadata`.
 
+El tracking DIRAE local se persiste por separado en `internship_dirae_status_history`. Cada fila registra `previous_status`, `new_status`, `actor_id`, `reason` y `changed_at` para cambios de `dirae_status`.
+
 ## Reglas de negocio
 
 #### Creación del historial
@@ -259,6 +306,7 @@ Relaciones principales:
 
 - El endpoint de ciclo de vida no modifica datos.
 - Los eventos usan `completed`, `current`, `pending` o `blocked`.
+- El evento `dirae_exported` del ciclo de vida se considera completado cuando `dirae_status=exported`.
 - La invitación del supervisor solo queda habilitada cuando la solicitud está
   aprobada y la autoevaluación del estudiante fue enviada.
 - El cierre final solo debe habilitarse si la solicitud está aprobada, la
@@ -276,6 +324,8 @@ Relaciones principales:
 | Derivación | `{"action": "derive"}`. |
 | Edición administrativa | `{"action": "admin_update", "changed_fields": [...]}`. |
 | Anulación lógica | `{"action": "cancel"}`. |
+| Corrección estudiantil | `{"action": "student_update", "changed_fields": [...]}`. |
+| Anulación estudiantil | `{"action": "student_cancel"}`. |
 
 > [!IMPORTANT]
 > La metadata es auxiliar. La interpretación principal del historial debe basarse

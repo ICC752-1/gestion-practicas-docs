@@ -304,7 +304,8 @@ El flujo de evaluación de una solicitud de práctica está diseñado bajo un mo
 | `Pendiente` | `Rechazada` | `reject` | **Sí** | **Sí** | No |
 | `En revisión` | `Aprobada` | `approve` | **Sí** | **Sí** | No |
 | `En revisión` | `Rechazada` | `reject` | **Sí** | **Sí** | No |
-| `Aprobada` + `completion_status=finalized` | Expediente interno en preparación | `derive` | Según regla documental | Según regla documental | **Sí** |
+| `Aprobada` + `completion_status=finalized` | `dirae_status=in_review` | `derive` | No | No | **Sí** |
+| `Aprobada` + `completion_status=finalized` + paquete `ready/exported` | `dirae_status=observed` | `dirae-reopen` | No | No | **Sí** |
 
 > [!WARNING]
 > **Criterio de Restricción Terminal:** Los estados administrativos `Aprobada`,
@@ -487,25 +488,28 @@ consultarlo, revisarlo o eliminarlo.
    y preparar el flujo documental, pero no obtiene por esta regla permisos para
    aprobar o rechazar la práctica.
 4. **Bloqueo por estado terminal:** El estudiante no puede cargar documentos
-   nuevos si la solicitud está `Aprobada`, `Rechazada` o `Reprobada`.
+   nuevos si la solicitud está `Rechazada` o `Reprobada`. Si está `Aprobada`,
+   solo puede cargar correcciones permitidas o `Diapositivas de Presentación`.
 5. **Corrección documental posterior:** Si la solicitud está `Aprobada`, el
    estudiante solo puede subir correcciones para tipos documentales previamente
-   observados. Secretaría puede cargar documentos administrativos no sensibles
-   asociados al expediente de una solicitud aprobada.
+   observados o `Diapositivas de Presentación`. Secretaría puede cargar documentos
+   administrativos no sensibles asociados al expediente de una solicitud aprobada.
 6. **Carga antes de resolver solicitud:** Se permite carga documental ordinaria
    mientras la solicitud permanece en `Pendiente` o `En revisión`.
 7. **Eliminación lógica:** Los documentos no se borran de la base de datos. La
    eliminación registra `deleted_at`, `deleted_by` y estado `deleted`.
 8. **Documento aprobado:** Un estudiante no puede eliminar un documento aprobado;
    un rol documental autorizado sí puede marcarlo como eliminado.
+9. **Documentos sensibles:** Un tipo documental con `is_sensitive=true` se oculta
+   a `Secretaria de Carrera` en listados, descargas y paquete documental.
 
 ### Matriz de Permisología Documental
 
 | Acción | Estudiante propietario | Otro estudiante | Encargado | Director | Secretaría |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Cargar documento | Sí, si práctica no terminal | No | No | No | No |
+| Cargar documento | Sí, si práctica no terminal o corrección permitida | No | No | No | Sí, solo administrativo no sensible en práctica aprobada |
 | Listar documentos | Sí | No | Sí | Sí | Sí |
-| Descargar documento | Sí | No | Sí | Sí | Sí |
+| Descargar documento | Sí | No | Sí | Sí | Sí, excepto sensibles |
 | Observar documento | No | No | Sí | Sí | Sí |
 | Aprobar documento | No | No | Sí | Sí | Sí |
 | Eliminar documento no aprobado | Sí | No | Sí | Sí | Sí |
@@ -643,8 +647,8 @@ estudiante.
    tanto, `completion_status` debe ser `finalized`.
 3. **Expediente local listo para exportar:** El expediente local debe estar
    preparado antes de exportar. En la implementación actual esto se representa
-   técnicamente con `dirae_status=ready`, pero ese campo no representa el estado
-   real del proceso externo en DIRAE.
+   técnicamente con `dirae_status=ready` o `dirae_status=exported`, pero ese campo
+   no representa el estado real del proceso externo en DIRAE.
 4. **Documentación requerida:** Todos los tipos documentales activos marcados
    como requeridos deben tener al menos un documento `approved` no eliminado.
 5. **Documento vigente por tipo:** Si existen varios documentos aprobados para
@@ -654,7 +658,7 @@ estudiante.
    expediente.
 7. **Roles autorizados:** `Encargado de practica`, `Director de carrera` y
    `Secretaria de Carrera` pueden consultar paquetes documentales y exportar
-   CSV DIRAE.
+   CSV DIRAE. Secretaría queda sujeta a la restricción de documentos sensibles.
 8. **Matrícula derivada:** La matrícula institucional se calcula como RUT sin
    puntos ni guion más los dos últimos dígitos del año de ingreso cuando ese dato
    está disponible. Si el año de ingreso no existe en el modelo actual, el campo
@@ -664,14 +668,17 @@ estudiante.
    contrato actual de notificaciones; podría agregarse después si el módulo de
    email incorpora adjuntos, destinatarios institucionales configurables y
    auditoría del envío.
-10. **Sin persistencia de lote en la versión actual:** La exportación se genera
-   dinámicamente y no crea lotes persistidos.
-11. **Evento auditable definido:** La exportación deja definido el evento
-   `dirae_export_generated` con actor, fecha, prácticas, documentos, archivo y
-   resultado local. Este evento es auditoría local de exportación, pero no
-   reemplaza el módulo transversal de auditoría descrito en
-   `backend/core/auditoria-funcional.md`. Tampoco confirma recepción ni
-   procesamiento por DIRAE.
+10. **CSV resumen y detalle:** La exportación genera un CSV resumen por práctica
+    y un CSV detalle por documento aprobado incluido en el paquete.
+11. **Cambio de estado local:** Cuando se exportan paquetes, las prácticas quedan
+    con `dirae_status=exported` y se registra historial DIRAE con razón
+    `dirae_document_package_exported`.
+12. **Sin persistencia de lote MVP:** La exportación se genera dinámicamente y no
+    crea lotes persistidos en esta versión.
+13. **Evento auditable definido:** La exportación deja definido el evento
+    `dirae_export_generated` con actor, fecha, prácticas, documentos, archivo y
+    resultado local para integrarlo con la auditoría funcional cuando 11.5 esté
+    disponible. Este evento no confirma recepción ni procesamiento por DIRAE.
 
 ### Resultado Técnico
 
@@ -682,6 +689,8 @@ estudiante.
 - `GET /dirae/document-packages/export` retorna CSV `text/csv`. Cuando se
   solicitan IDs explícitos, una práctica inexistente responde `404` y una
   práctica no exportable responde `409`.
+- `GET /dirae/document-packages/export/detail` retorna CSV `text/csv` con una
+  fila por documento aprobado incluido en el paquete exportable.
 
 ---
 

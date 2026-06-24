@@ -31,7 +31,7 @@ aprobación.
 - Listar prácticas del estudiante y prácticas visibles para dashboard.
 - Consultar detalle, historial administrativo, seguimiento de ciclo de vida y
   excepciones de una práctica.
-- Ejecutar acciones administrativas de aprobación, rechazo y derivación.
+- Ejecutar acciones administrativas de aprobación, rechazo, derivación DIRAE y reapertura documental.
 - Iniciar revisión automáticamente al abrir el detalle de una solicitud
   pendiente.
 - Registrar excepciones administrativas sobre reglas de negocio específicas.
@@ -113,7 +113,7 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 #### Dashboard de revisión
 
 1. Un actor autorizado llama a `GET /internships` o `GET /internships/stats`.
-2. El controller exige `Encargado de practica` o `Director de carrera`.
+2. El controller exige `Encargado de practica`, `Director de carrera` o `Secretaria de Carrera`.
 3. El service carga prácticas con estudiante y estado actual.
 4. Los estados se normalizan a `submitted`, `in_review`, `approved` o `rejected`.
 5. Se retorna una lista resumida o conteos agregados.
@@ -197,18 +197,17 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 
 #### Rechazo y preparación documental para DIRAE
 
-1. Un actor autorizado llama a `POST /internships/{internship_id}/reject` o `POST /internships/{internship_id}/derive`.
+1. Un actor autorizado llama a `POST /internships/{internship_id}/reject`, `POST /internships/{internship_id}/derive` o `POST /internships/{internship_id}/dirae-reopen`.
 2. El service valida el permiso de acción.
 3. Se exige comentario no vacío.
 4. Se rechazan prácticas inexistentes.
 5. El rechazo cambia el estado administrativo de la solicitud a `Rechazada` y
    libera `blocks_new_registration`.
-6. La preparación documental no aprueba ni rechaza la solicitud; actualiza una
-   marca técnica interna del expediente local (`dirae_status`) para habilitar
-   revisión, rectificación y exportación.
+6. La preparación documental no aprueba ni rechaza la solicitud; actualiza `dirae_status` para habilitar revisión, rectificación y exportación.
 7. La preparación documental para DIRAE exige solicitud en estado `Aprobada` y práctica con
    `completion_status=finalized`.
-8. Se registra historial interno y se intenta notificar al estudiante. Este
+8. La reapertura DIRAE solo permite pasar a `observed` desde paquetes `ready` o `exported`.
+9. Se registra historial interno y se intenta notificar al estudiante. Este
    historial no representa seguimiento del trámite externo en DIRAE.
 
 #### Excepciones administrativas
@@ -237,8 +236,8 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | POST | `/internships` | Crea una solicitud de práctica en estado inicial. | Estudiante |
-| GET | `/internships` | Lista prácticas para dashboard de revisión. | Encargado de practica, Director de carrera |
-| GET | `/internships/stats` | Retorna conteos agregados para dashboard. | Encargado de practica, Director de carrera |
+| GET | `/internships` | Lista prácticas para dashboard de revisión. | Encargado de practica, Director de carrera, Secretaria de Carrera |
+| GET | `/internships/stats` | Retorna conteos agregados para dashboard. | Encargado de practica, Director de carrera, Secretaria de Carrera |
 | GET | `/internships/me` | Lista prácticas del usuario autenticado. | Bearer token |
 | GET | `/internships/induction` | Retorna contenido de inducción activo y publicado. | Bearer token |
 | POST | `/internships/induction/attempts` | Registra y evalúa un intento de inducción. | Estudiante |
@@ -253,17 +252,17 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 | PATCH | `/internships/{internship_id}/admin` | Corrige campos editables con trazabilidad. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/cancel` | Anula lógicamente una práctica. | Encargado de practica, Director de carrera |
 | POST | `/internships/{internship_id}/start-review` | Marca una solicitud pendiente como `En revisión` al abrir detalle administrativo. | Encargado de practica, Director de carrera |
-| POST | `/internships/{internship_id}/approve` | Avanza o aprueba una práctica. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
-| POST | `/internships/{internship_id}/reject` | Rechaza una práctica con motivo obligatorio. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
-| POST | `/internships/{internship_id}/derive` | Inicia preparación/revisión local del expediente para exportación, sin cambiar `currentstate`. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
-| POST | `/internships/{internship_id}/dirae-reopen` | Reabre el expediente local para rectificación documental previa a una nueva exportación. | Encargado de practica, Director de carrera, Secretaria de Carrera por dependencia HTTP |
+| POST | `/internships/{internship_id}/approve` | Avanza o aprueba una práctica. | Encargado de practica, Director de carrera |
+| POST | `/internships/{internship_id}/reject` | Rechaza una práctica con motivo obligatorio. | Encargado de practica, Director de carrera |
+| POST | `/internships/{internship_id}/derive` | Inicia preparación/revisión local del expediente para exportación, sin cambiar `currentstate`. | Secretaria de Carrera |
+| POST | `/internships/{internship_id}/dirae-reopen` | Reabre el expediente local para rectificación documental previa a una nueva exportación. | Secretaria de Carrera |
 | POST | `/internships/{internship_id}/exceptions` | Registra excepción administrativa. | Encargado de practica, Director de carrera |
 | GET | `/internships/{internship_id}/exceptions` | Lista excepciones de una práctica. | Propietario o rol privilegiado |
 
 > [!WARNING]
-> Algunos endpoints de acción aceptan varios roles a nivel de dependencia HTTP,
-> pero el service vuelve a validar la acción concreta con `ROLE_PERMISSIONS`.
-> Por ejemplo, `Secretaria de Carrera` puede derivar, pero no aprobar ni rechazar.
+> Además de las dependencias HTTP, el service vuelve a validar la acción concreta
+> con `ROLE_PERMISSIONS`. Por eso los permisos efectivos deben revisarse en el
+> service antes de cambiar roles o endpoints.
 
 ## Contratos principales
 
@@ -304,8 +303,7 @@ Payload usado por estudiantes para registrar una solicitud. El backend no acepta
 <details>
 <summary><strong>InternshipActionRequest</strong></summary>
 
-Payload usado por aprobación, rechazo y derivación. El comentario es obligatorio
-solo para rechazo y derivación.
+Payload usado por aprobación, rechazo, derivación y reapertura DIRAE. El comentario es obligatorio para rechazo, derivación y reapertura DIRAE.
 
 ```json
 {
@@ -341,7 +339,6 @@ administrativo.
   "has_school_insurance": false,
   "insurance_status": "requires_exception",
   "has_induction": true,
-  "requires_retake": false,
   "has_school_insurance_exception": false,
   "has_approved_practice_1": true,
   "sequentiality_blocked": false,
@@ -368,8 +365,8 @@ debe enviar la clave seleccionada, no el texto visible.
 {
   "id": 1,
   "title": "Inducción obligatoria",
-  "requires_retake": false,
   "min_score": 1,
+  "videos": [],
   "questions": [
     {
       "id": 1,
@@ -486,6 +483,7 @@ Estados posibles por evento: `completed`, `current`, `pending`, `blocked`.
 | --- | --- |
 | `Pendiente` | Estado inicial de una solicitud registrada. |
 | `En revisión` | Revisión administrativa previa a aprobación final. |
+| `En revisión DIRAE` | Estado histórico legado tratado como revisión administrativa para compatibilidad. El flujo actual usa `dirae_status`. |
 | `Aprobada` | Estado terminal exitoso. |
 | `Rechazada` | Estado terminal de rechazo. |
 | `Reprobada` | Estado histórico tratado como rechazo en dashboard y terminalidad. |
@@ -539,8 +537,9 @@ operativa hasta que ese flujo actualice explícitamente `blocks_new_registration
 
 | Estado origen | Estados destino permitidos |
 | --- | --- |
-| `Pendiente` | `En revisión`, `Aprobada`, `Rechazada`. |
-| `En revisión` | `Aprobada`, `Rechazada`. |
+| `Pendiente` | `En revisión`, `En revisión DIRAE`, `Aprobada`, `Rechazada`. |
+| `En revisión` | `Aprobada`, `Rechazada`, `En revisión DIRAE`. |
+| `En revisión DIRAE` | `Aprobada`, `Rechazada`. |
 | `Aprobada` | Ninguno. |
 | `Rechazada` | Ninguno. |
 
@@ -552,7 +551,8 @@ La preparación local del expediente se expresa por transiciones internas de
 | `not_started` | `in_review` | Solicitud `Aprobada` y `completion_status=finalized` (al derivar). |
 | `in_review` | `observed`, `ready` | Revisión documental local. Transiciona a `ready` automáticamente cuando todos los documentos requeridos están aprobados (y no quedan pendientes de revisión o con observaciones), y a `observed` si se añade alguna observación. |
 | `observed` | `in_review`, `ready` | Rectificación documental. Transiciona a `in_review` si hay archivos nuevos por revisar, y a `ready` automáticamente si todo queda aprobado. |
-| `ready` | `exported`, `observed`, `in_review` | Exportación CSV generada correctamente. Si se vuelve a subir, borrar o modificar el estado de algún documento, retorna a `in_review` u `observed` automáticamente. |
+| `ready` | `exported`, `observed`, `in_review` | Exportación CSV generada correctamente o reapertura para rectificación. Si se vuelve a subir, borrar o modificar el estado de algún documento, retorna a `in_review` u `observed` automáticamente. |
+| `exported` | `observed`, `in_review`, `ready` | La exportación marca el paquete como exportado; una reapertura o cambio documental puede devolverlo a revisión local. |
 
 #### Permisos de acción
 
@@ -644,12 +644,13 @@ la práctica ya aprobada no se revierte automáticamente.
 
 El módulo **`internships`** no define variables de entorno propias. Sin embargo,
 construye `NotificationService` para emitir eventos asociados a creación,
-aprobación, rechazo y derivación.
+aprobación, rechazo y derivación. También usa `STUDENT_EFFECTIVE_CORRECTION_WINDOW_HOURS` para calcular la ventana de corrección/anulación reciente del estudiante.
 
 | Variable indirecta | Impacto |
 | --- | --- |
 | `NOTIFICATION_MODE` | Define si las notificaciones se simulan o se despachan con configuración real. |
 | `MAIL_*` | Requeridas por el módulo `notifications` cuando `NOTIFICATION_MODE=real`. |
+| `STUDENT_EFFECTIVE_CORRECTION_WINDOW_HOURS` | Horas durante las cuales una solicitud pendiente puede ser corregida o anulada por su estudiante antes de intervención administrativa. |
 
 > [!NOTE]
 > Las notificaciones son efectos secundarios no bloqueantes. Si falla el envío o
