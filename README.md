@@ -18,8 +18,12 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 
 - [`backend/modules/admin.md`](backend/modules/admin.md): operaciones administrativas, consultas, requisitos y reglas del módulo `admin`.
 - [`backend/modules/auth.md`](backend/modules/auth.md): autenticación, usuarios, roles, JWT, refresh tokens y OAuth Google.
+- [`backend/modules/data-portability.md`](backend/modules/data-portability.md): exportación de datos personales del estudiante y paquetes de portabilidad.
 - [`backend/modules/notifications.md`](backend/modules/notifications.md): notificaciones persistentes, eventos, estados, SMTP y modo simulado.
 - [`backend/modules/presentation-letters.md`](backend/modules/presentation-letters.md): cartas de presentación automáticas, plantillas, descarga y alcance vigente.
+- [`backend/modules/scheduling.md`](backend/modules/scheduling.md): disponibilidad, reservas y gestión de entrevistas o presentaciones.
+- [`backend/modules/self-evaluations.md`](backend/modules/self-evaluations.md): autoevaluaciones de estudiantes asociadas al cierre de práctica.
+- [`backend/modules/supervisor-evaluations.md`](backend/modules/supervisor-evaluations.md): invitaciones y evaluaciones del supervisor externo.
 - [`backend/modules/internships/internships-technical-reference.md`](backend/modules/internships/internships-technical-reference.md): referencia técnica principal del módulo de prácticas.
 - [`backend/modules/internships/internships-business-flow.md`](backend/modules/internships/internships-business-flow.md): reglas de negocio y flujo funcional de prácticas.
 - [`backend/modules/internships/internships-tracking.md`](backend/modules/internships/internships-tracking.md): trazabilidad de estados y acciones administrativas de prácticas.

@@ -172,8 +172,14 @@ cerrado según el flujo.
   "id": 10,
   "purpose": "final_presentation",
   "status": "reserved",
-  "start_at": "2026-06-24T14:00:00",
-  "end_at": "2026-06-24T14:30:00",
+  "date": "2026-06-24",
+  "start_time": "14:00:00",
+  "end_time": "14:30:00",
+  "duration_minutes": 30,
+  "modality": "Presencial",
+  "result": null,
+  "location": "Sala 101",
+  "timezone": "America/Santiago",
   "internship_id": 25
 }
 ```
@@ -192,7 +198,9 @@ sea coordinada manualmente.
   "internship_id": 25,
   "purpose": "general_consultation",
   "status": "pending",
-  "requested_by_user_id": 8
+  "student_id": 8,
+  "preferred_dates": ["2026-06-24"],
+  "target_coordinator_id": 12
 }
 ```
 
@@ -205,9 +213,9 @@ Payload usado para registrar qué ocurrió en una cita.
 
 ```json
 {
-  "attended": true,
+  "attendance_status": "completed",
   "result": "passed",
-  "notes": "Presentación realizada correctamente."
+  "comments": "Presentación realizada correctamente."
 }
 ```
 
