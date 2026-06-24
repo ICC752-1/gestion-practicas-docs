@@ -32,10 +32,11 @@ paquete documental requerido para exportación DIRAE.
 - Cargar documentos asociados a una práctica.
 - Listar documentos vigentes de una práctica.
 - Descargar archivos con autorización previa.
+- Restringir documentos sensibles para roles con acceso parcial.
 - Aprobar u observar documentos durante revisión administrativa.
 - Eliminar documentos de forma lógica.
 - Construir el paquete documental de una práctica.
-- Exportar paquetes documentales DIRAE en CSV.
+- Exportar paquetes documentales DIRAE en CSV resumen y CSV detalle.
 - Notificar cargas y cambios de estado documental.
 
 > [!IMPORTANT]
@@ -56,10 +57,11 @@ del archivo más allá de tamaño, extensión, estado y tipo documental.
 - Carga de archivos en filesystem privado.
 - Persistencia de metadatos documentales.
 - Control de acceso a listados y descargas.
+- Control de acceso a documentos sensibles.
 - Revisión documental mediante estados simples.
 - Eliminación lógica de documentos.
 - Construcción del paquete documental por práctica.
-- Exportación CSV de paquetes DIRAE.
+- Exportación CSV resumen y detalle de paquetes DIRAE.
 - Emisión de notificaciones documentales.
 
 #### Fuera de alcance
@@ -106,30 +108,35 @@ Los tipos documentales seed actuales son:
 | --- | --- | --- |
 | `Formulario de inscripción` | No | `Académico`. |
 | `Carta de aceptación` | No | `Administrativo`. |
-| `Seguro escolar` | No | `Administrativo`. |
+| `Seguro escolar` | No | `Administrativo`, sensible. |
 | `Documento complementario` | No | `Administrativo`. |
+| `Diapositivas de Presentación` | No | `Académico`. |
 
 #### Carga documental
 
 1. El propietario de la práctica llama a `POST /internships/{internship_id}/documents`.
 2. Envía `document_type_id` y `file` mediante multipart form.
 3. El service verifica que la práctica exista.
-4. Se exige que el usuario autenticado sea propietario de la práctica.
-5. Se bloquea la carga si la práctica está en estado terminal.
+4. Se exige que el usuario autenticado sea propietario de la práctica o `Secretaria de Carrera` en los casos administrativos permitidos.
+5. Se bloquea la carga si la práctica está en estado terminal, salvo correcciones permitidas.
 6. Se valida que el tipo documental exista y esté activo.
 7. Se normaliza el nombre original del archivo.
 8. Se validan extensión y tamaño.
 9. Se escribe el archivo físico en storage privado.
 10. Se persisten metadatos con estado `uploaded`.
 11. Se intenta notificar a los roles documentales.
+12. Se recalcula el estado DIRAE local de la práctica si corresponde.
+
+En prácticas ya `Aprobada`, el estudiante solo puede subir `Diapositivas de Presentación` o reemplazar un tipo documental que tenga una observación vigente. `Secretaria de Carrera` puede cargar correcciones administrativas no sensibles solo cuando la práctica ya está aprobada.
 
 #### Listado y descarga
 
 1. El usuario llama a `GET /internships/{internship_id}/documents` o `GET /documents/{document_id}/download`.
 2. El service valida que la práctica o documento exista.
 3. Se permite acceso al propietario de la práctica o a un rol documental.
-4. Los documentos eliminados lógicamente no se listan ni descargan.
-5. La descarga resuelve `file_path` contra `DOCUMENT_STORAGE_DIR` y retorna `FileResponse`.
+4. Para `Secretaria de Carrera`, los documentos sensibles se filtran del listado y no se pueden descargar.
+5. Los documentos eliminados lógicamente no se listan ni descargan.
+6. La descarga resuelve `file_path` contra `DOCUMENT_STORAGE_DIR` y retorna `FileResponse`.
 
 #### Revisión documental
 
@@ -139,6 +146,7 @@ Los tipos documentales seed actuales son:
 4. Si el estado destino es `observed`, el comentario es obligatorio.
 5. Se registran `reviewed_at`, `reviewed_by`, `review_comment` y `update_date`.
 6. Se intenta notificar al estudiante.
+7. Se recalcula el estado DIRAE local de la práctica si corresponde.
 
 #### Eliminación lógica
 
@@ -148,20 +156,22 @@ Los tipos documentales seed actuales son:
 4. El propietario puede eliminar documentos propios, salvo documentos ya `approved`.
 5. Se marca el documento como `deleted` y se registran `deleted_at`, `deleted_by` y `update_date`.
 6. El archivo físico no se borra automáticamente.
+7. Se recalcula el estado DIRAE local de la práctica si corresponde.
 
 #### Paquete documental
 
 1. El usuario llama a `GET /internships/{internship_id}/documents/package`.
 2. El service valida acceso como propietario o rol documental.
 3. Se cargan los tipos documentales requeridos y documentos vigentes de la práctica.
-4. Para cada tipo requerido se selecciona el último documento `approved`.
-5. Se informan documentos requeridos aprobados, requeridos faltantes y documentos opcionales aprobados.
-6. Se calcula `exportable` y sus `reasons`.
+4. Si el actor es `Secretaria de Carrera`, se excluyen documentos y tipos documentales sensibles.
+5. Para cada tipo requerido se selecciona el último documento `approved`.
+6. Se informan documentos requeridos aprobados, requeridos faltantes y documentos opcionales aprobados.
+7. Se calcula `exportable` y sus `reasons`.
 
 > [!NOTE]
-> El paquete documental es una vista de preparación para DIRAE. No cambia estados
-> por sí mismo. Solo resume si la práctica tiene los documentos requeridos
-> aprobados y si la práctica está en estado funcional `Aprobada`.
+> El paquete documental recalcula el estado DIRAE local antes de responder. Ese
+> estado indica preparación interna del expediente; no confirma recepción externa
+> por DIRAE.
 
 #### Exportación DIRAE
 
@@ -172,7 +182,10 @@ Los tipos documentales seed actuales son:
 5. Construye paquetes documentales y conserva solo los exportables.
 6. Si se pidieron IDs concretos y alguno no es exportable, responde `409` con razones.
 7. Si no se pidieron IDs, exporta todos los paquetes exportables disponibles.
-8. Retorna un CSV con nombre `dirae_document_packages_<timestamp>.csv`.
+8. Retorna un CSV resumen con nombre `dirae_lote_<timestamp>_<lote>.csv`.
+9. Marca las prácticas exportadas con `dirae_status=exported` y registra historial DIRAE.
+
+El endpoint `GET /dirae/document-packages/export/detail` usa la misma selección de paquetes exportables, pero retorna un CSV de detalle con una fila por documento aprobado incluido en el paquete. El archivo se nombra como `dirae_lote_<timestamp>_<lote>_detalle.csv`.
 
 ## Endpoints disponibles
 
@@ -181,10 +194,11 @@ Los tipos documentales seed actuales son:
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | GET | `/documents/types` | Lista tipos documentales activos. | Bearer token |
-| POST | `/internships/{internship_id}/documents` | Carga un documento para una práctica. | Propietario |
+| POST | `/internships/{internship_id}/documents` | Carga un documento para una práctica. | Propietario o Secretaría en casos permitidos |
 | GET | `/internships/{internship_id}/documents` | Lista documentos vigentes de una práctica. | Propietario o rol documental |
 | GET | `/internships/{internship_id}/documents/package` | Resume paquete documental y exportabilidad DIRAE. | Propietario o rol documental |
 | GET | `/dirae/document-packages/export` | Exporta CSV de paquetes documentales DIRAE. | Rol documental |
+| GET | `/dirae/document-packages/export/detail` | Exporta CSV de detalle documental por documento aprobado. | Rol documental |
 | GET | `/documents/{document_id}/download` | Descarga un archivo mediante endpoint autenticado. | Propietario o rol documental |
 | PATCH | `/documents/{document_id}/status` | Aprueba u observa un documento. | Rol documental |
 | DELETE | `/documents/{document_id}` | Elimina lógicamente un documento. | Propietario o rol documental |
@@ -211,6 +225,7 @@ Representa un tipo documental activo disponible para carga.
   "description": "Formulario de inscripción de práctica firmado o respaldado.",
   "is_required": true,
   "category": "Académico",
+  "is_sensitive": false,
   "is_active": true
 }
 ```
@@ -246,6 +261,7 @@ clave es interna del storage privado.
     "description": "Formulario de inscripción de práctica firmado o respaldado.",
     "is_required": true,
     "category": "Académico",
+    "is_sensitive": false,
     "is_active": true
   }
 }
@@ -278,6 +294,7 @@ exportarse para trámite externo en DIRAE.
 {
   "internship_id": 7,
   "status": "Aprobada",
+  "dirae_status": "ready",
   "exportable": true,
   "reasons": [],
   "student": {
@@ -392,7 +409,7 @@ de resolverla contra `DOCUMENT_STORAGE_DIR`.
 
 | Estado de práctica | Efecto |
 | --- | --- |
-| `Aprobada` | Bloquea nuevas cargas documentales. |
+| `Aprobada` | Bloquea cargas generales, pero permite `Diapositivas de Presentación`, correcciones de tipos observados y correcciones administrativas no sensibles por Secretaría. |
 | `Rechazada` | Bloquea nuevas cargas documentales. |
 | `Reprobada` | Bloquea nuevas cargas documentales. |
 
@@ -400,21 +417,28 @@ de resolverla contra `DOCUMENT_STORAGE_DIR`.
 
 | Operación | Quién puede ejecutarla |
 | --- | --- |
-| Subir documento | Propietario de la práctica. |
-| Listar documentos | Propietario o rol documental. |
-| Descargar documento | Propietario o rol documental. |
+| Subir documento | Propietario de la práctica; `Secretaria de Carrera` solo para correcciones administrativas no sensibles en práctica aprobada. |
+| Listar documentos | Propietario o rol documental; `Secretaria de Carrera` no ve documentos sensibles. |
+| Descargar documento | Propietario o rol documental; `Secretaria de Carrera` no descarga documentos sensibles. |
 | Aprobar u observar | Rol documental. |
 | Eliminar documento no aprobado | Propietario o rol documental. |
 | Eliminar documento aprobado | Rol documental. |
-| Consultar paquete documental | Propietario o rol documental. |
+| Consultar paquete documental | Propietario o rol documental; `Secretaria de Carrera` recibe paquete sin documentos/tipos sensibles. |
 | Exportar CSV DIRAE | Rol documental. |
+
+Documentos sensibles:
+
+- Un tipo documental es sensible cuando `DocumentType.is_sensitive=true`.
+- El seed actual marca `Seguro escolar` como sensible.
+- `Secretaria de Carrera` mantiene acceso documental general, pero el service filtra tipos y documentos sensibles.
+- Si el paquete contiene o requiere antecedentes sensibles no visibles para el actor, agrega la razón `sensitive_document_restricted`.
 
 #### Revisión documental
 
 - `observed` requiere comentario no vacío.
 - `approved` no requiere comentario.
 - La revisión actualiza `reviewed_at`, `reviewed_by`, `review_comment` y `update_date`.
-- La revisión no cambia el estado de la práctica.
+- La revisión puede gatillar una transición automática del estado DIRAE local si cambia la preparación del paquete.
 
 #### Eliminación lógica
 
@@ -422,6 +446,7 @@ de resolverla contra `DOCUMENT_STORAGE_DIR`.
 - La eliminación registra `deleted_at`, `deleted_by` y `update_date`.
 - Los documentos eliminados no se listan ni descargan por API.
 - No existe borrado físico automático del archivo.
+- La eliminación puede gatillar una transición automática del estado DIRAE local si deja incompleto el paquete.
 
 #### Paquete documental DIRAE
 
@@ -430,9 +455,11 @@ Un paquete es exportable cuando cumple estas condiciones:
 - La solicitud de práctica está en estado `Aprobada`.
 - La práctica está cerrada con `completion_status=finalized`.
 - El expediente documental local está preparado para exportación. En la
-  implementación actual se representa con la marca técnica `dirae_status=ready`,
-  sin implicar estado externo en DIRAE.
+  implementación actual se representa con `dirae_status=ready` o `dirae_status=exported`,
+  sin implicar por sí solo estado externo en DIRAE.
 - Todos los tipos documentales requeridos tienen un documento `approved` vigente.
+- No hay documentos observados vigentes pendientes de corrección.
+- El actor puede ver todos los documentos/tipos necesarios para evaluar el paquete.
 
 Razones de no exportabilidad:
 
@@ -449,14 +476,31 @@ Para cada tipo documental, el paquete selecciona el último documento aprobado
 según `upload_date` y luego `id`. Documentos `uploaded`, `observed`, `deleted` o
 con `deleted_at` no se consideran aprobados para el paquete.
 
+#### Transición automática DIRAE local
+
+El módulo recalcula `Internship.dirae_status` cuando se carga, revisa o elimina un documento, cuando se consulta el paquete documental y cuando se prepara una exportación DIRAE. La transición automática solo se aplica si la práctica está `completion_status=finalized` y el estado actual está dentro de `not_started`, `in_review`, `observed`, `ready` o `exported`.
+
+Reglas actuales:
+
+| Condición documental | Estado DIRAE local destino |
+| --- | --- |
+| Hay documentos observados vigentes | `observed` |
+| Faltan documentos requeridos aprobados | `in_review` |
+| Hay documentos cargados pendientes de revisión | `in_review` |
+| No faltan requeridos, no hay observados y no hay cargados pendientes | `ready` |
+
+Cada cambio automático registra historial DIRAE con la razón `Transición automática por cambio en estado de documentos.`.
+
 #### Exportación CSV DIRAE
 
 - Con `internship_ids`, todos los IDs solicitados deben existir.
 - Con `internship_ids`, cualquier práctica no exportable produce `409` con razones.
 - Sin `internship_ids`, se exportan solo las prácticas exportables disponibles.
 - Sin paquetes exportables, el CSV puede contener solo encabezado.
-- El service construye y persiste un evento local `dirae_export_generated` como
-  dato de auditoría de la exportación.
+- El service construye un evento `dirae_export_generated` como dato de auditoría de la exportación.
+- Cuando se generan filas exportables, el repository marca esas prácticas como `dirae_status=exported` con razón `dirae_document_package_exported`.
+- La exportación resumen incluye una fila por práctica exportada.
+- La exportación detalle incluye una fila por documento aprobado incluido en el paquete.
 - El contrato actual solo genera descarga CSV. No envía correo con archivo
   adjunto; para soportarlo habría que extender el módulo `notifications` con
   adjuntos, destinatario institucional configurable y auditoría de envío.
@@ -487,8 +531,10 @@ Variables indirectas por notificaciones:
 - Si existen metadatos pero falta el archivo físico, la descarga responde `404`.
 - Si falla la persistencia después de escribir el archivo, el service intenta eliminar el archivo recién escrito.
 - `DocumentResponse` no debe exponer `file_path`.
+- `DocumentTypeResponse` expone `is_sensitive` para que el frontend pueda tratar tipos reservados de forma explícita.
 - `DOCUMENT_STORAGE_DIR` no debe servirse como contenido estático.
-- El CSV DIRAE usa los encabezados definidos en `DIRAE_CSV_HEADER`.
+- El CSV DIRAE resumen usa los encabezados definidos en `DIRAE_CSV_HEADER`.
+- El CSV DIRAE detalle usa los encabezados definidos en `DIRAE_CSV_DETAIL_HEADER`.
 - La eliminación lógica mantiene trazabilidad pero no libera espacio en disco.
 - La limpieza física futura debe preservar trazabilidad y responder a una regla institucional explícita.
 
