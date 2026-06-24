@@ -1,9 +1,22 @@
 <h1 align="center"><em>Presentation Letters</em></h1>
 
 > [!NOTE]
-> Esta documentación describe el flujo vigente de cartas de presentación. El
-> sistema no implementa una bandeja manual de solicitudes con estados
-> `requested`, `in_progress`, `issued`, `rejected` o `cancelled`.
+> Esta documentación técnica describe el comportamiento actual del módulo
+> `presentation_letters` desde una perspectiva funcional e interna. El sistema no
+> implementa una bandeja manual de solicitudes con estados `requested`,
+> `in_progress`, `issued`, `rejected` o `cancelled`. El contrato HTTP formal queda
+> en OpenAPI y el detalle interactivo queda en Swagger.
+
+## Contenidos
+- [Resumen operativo](#resumen-operativo)
+- [Ámbito y responsabilidades](#ámbito-y-responsabilidades)
+- [Estructura interna](#estructura-interna)
+- [Funcionalidades](#funcionalidades)
+- [Endpoints disponibles](#endpoints-disponibles)
+- [Contratos principales](#contratos-principales)
+- [Reglas de negocio](#reglas-de-negocio)
+- [Configuración por entorno](#configuración-por-entorno)
+- [Consideraciones operativas](#consideraciones-operativas)
 
 ## Resumen operativo
 
@@ -12,61 +25,119 @@ automáticamente una carta de presentación para acercarse a una organización. 
 carta se construye con datos reales del estudiante, el tipo de práctica y una
 plantilla institucional editable por roles administrativos.
 
+**Permite:**
+
+- Listar plantillas de cartas disponibles para roles administrativos.
+- Consultar la plantilla activa de un tipo de práctica.
+- Editar plantillas institucionales.
+- Generar una carta de presentación en PDF.
+- Guardar metadata de cada carta generada.
+- Listar cartas generadas por el estudiante.
+- Descargar una carta ya generada mediante un endpoint autenticado.
+
 El comportamiento replica el flujo institucional usado con formularios externos:
 el estudiante solicita la carta al sistema y recibe una emisión inmediata si
 existe plantilla activa y sus datos mínimos están disponibles.
 
-## Alcance
+## Ámbito y responsabilidades
 
-**Permite:**
+El módulo **`presentation_letters`** concentra la creación y descarga de cartas de
+presentación. No decide si una práctica está aprobada ni reemplaza el flujo de
+documentos; solo genera un archivo institucional a partir de plantillas y datos
+del estudiante.
 
-- Mantener plantillas institucionales por tipo de práctica.
-- Generar una carta PDF automáticamente para el estudiante autenticado.
-- Guardar metadata de la carta generada.
-- Notificar al estudiante cuando la carta queda generada.
-- Listar cartas propias.
-- Descargar cartas propias o cartas por rol administrativo autorizado.
+#### Responsabilidades principales
 
-**No permite:**
+- Mantener plantillas activas para `Práctica de Estudio I` y
+  `Práctica de Estudio II`.
+- Generar cartas PDF desde una plantilla DOCX institucional.
+- Guardar metadata de cada carta generada.
+- Guardar el archivo generado en storage privado.
+- Permitir descarga autenticada de cartas.
+- Notificar al estudiante cuando la generación se despacha correctamente.
 
+#### Fuera de alcance
+
+- Crear o aprobar solicitudes de práctica.
+- Validar documentos cargados por estudiantes.
+- Exponer archivos como contenido público.
+- Administrar usuarios, roles o sesiones.
 - Crear una solicitud manual con cola de revisión administrativa.
 - Procesar estados manuales `requested`, `in_progress`, `issued`, `rejected` o
   `cancelled`.
-- Bloquear la inducción, la solicitud de práctica o la aprobación de una
-  solicitud por no tener carta.
 - Enviar cartas a organizaciones externas desde la plataforma.
 
-## Reglas de negocio
+> [!IMPORTANT]
+> Las cartas contienen datos personales del estudiante. Por eso la descarga debe
+> pasar por la API y no por una ruta pública del servidor de archivos.
 
-1. La carta de presentación es opcional y no bloquea ningún hito obligatorio del
-   proceso de práctica.
-2. La carta se genera automáticamente desde una plantilla activa para el tipo de
-   práctica solicitado.
-3. Los tipos soportados actualmente son `Práctica de Estudio I` y
-   `Práctica de Estudio II`.
-4. Si no existe plantilla activa para el tipo solicitado, el backend responde con
-   error explícito `presentation_letter_template_not_found`.
-5. La descarga respeta propiedad: el estudiante solo descarga cartas propias; un
-   rol administrativo autorizado puede descargar cartas para gestión interna.
-6. La generación registra `sent_at` cuando la notificación al estudiante queda
-   despachada o simulada correctamente.
-7. La carta contiene datos personales y académicos del estudiante; no debe
-   exponerse en listados públicos ni por enlaces anónimos.
+## Estructura interna
 
-## Endpoints
+| Capa | Archivo | Responsabilidad |
+| --- | --- | --- |
+| Controller | `app/modules/presentation_letters/controllers/presentation_letter_controller.py` | Define rutas HTTP para plantillas, generación, listado y descarga. |
+| Service | `app/modules/presentation_letters/services/presentation_letter_service.py` | Orquesta permisos, generación PDF, storage, notificación y descarga. |
+| Repository | `app/modules/presentation_letters/repositories/presentation_letter_repository.py` | Encapsula consultas y persistencia de plantillas y cartas. |
+| Models | `app/modules/presentation_letters/models/presentation_letter_model.py` | Define plantillas y cartas generadas. |
+| Schemas | `app/modules/presentation_letters/schemas/presentation_letter_schema.py` | Define contratos de entrada y salida del módulo. |
 
-| Método | Ruta | Propósito | Acceso |
+El módulo reutiliza identidad y roles desde `auth`, configuración global desde
+`app/core/config.py` y notificaciones mediante `notifications`.
+
+## Funcionalidades
+
+#### Consulta de plantillas
+
+1. Un rol administrativo llama a `GET /presentation-letters/templates`.
+2. El backend valida que el usuario tenga permisos de lectura administrativa.
+3. Se retornan las plantillas activas disponibles.
+
+También puede consultarse una plantilla específica con
+`GET /presentation-letters/templates/{practice_type}`.
+
+#### Edición de plantillas
+
+1. Dirección de carrera llama a `PUT /presentation-letters/templates/{practice_type}`.
+2. El backend valida que el tipo de práctica sea soportado.
+3. Se actualizan los textos, horas mínimas, aprendizajes esperados y firma.
+4. La plantilla queda disponible para futuras cartas generadas.
+
+#### Generación de carta
+
+1. El estudiante llama a `POST /presentation-letters/generate`.
+2. El backend valida que exista una plantilla activa para el tipo de práctica.
+3. Se construye la carta con datos del estudiante y contenido institucional.
+4. Se renderiza una plantilla DOCX y se convierte a PDF.
+5. El PDF se guarda en storage privado y se registra la carta en base de datos.
+6. Si corresponde, se notifica al estudiante.
+
+#### Listado y descarga
+
+1. El estudiante lista sus cartas con `GET /presentation-letters/me`.
+2. Para descargar, llama a `GET /presentation-letters/{letter_id}/download`.
+3. El backend verifica que la carta exista y que el usuario pueda acceder.
+4. Se retorna el archivo PDF mediante una respuesta autenticada.
+5. La descarga queda registrada en la metadata de la carta.
+
+## Endpoints disponibles
+
+**Todos los endpoints requieren autenticación.**
+
+| Método | Ruta | Propósito | Acceso principal |
 | --- | --- | --- | --- |
-| GET | `/presentation-letters/templates` | Lista plantillas de cartas. | Rol administrativo autorizado |
-| GET | `/presentation-letters/templates/{practice_type}` | Obtiene plantilla por tipo de práctica. | Rol administrativo autorizado |
-| PUT | `/presentation-letters/templates/{practice_type}` | Actualiza plantilla institucional. | Rol administrativo autorizado |
-| POST | `/presentation-letters/generate` | Genera carta automática para el estudiante autenticado. | Estudiante |
-| GET | `/presentation-letters/me` | Lista cartas generadas por el estudiante autenticado. | Estudiante |
-| GET | `/presentation-letters/{letter_id}/download` | Descarga una carta autorizada. | Propietario o rol administrativo autorizado |
+| GET | `/presentation-letters/templates` | Lista plantillas activas. | Roles administrativos |
+| GET | `/presentation-letters/templates/{practice_type}` | Consulta una plantilla por tipo de práctica. | Roles administrativos |
+| PUT | `/presentation-letters/templates/{practice_type}` | Edita una plantilla institucional. | Director de carrera |
+| POST | `/presentation-letters/generate` | Genera una carta PDF para el estudiante. | Estudiante |
+| GET | `/presentation-letters/me` | Lista cartas generadas del estudiante. | Estudiante |
+| GET | `/presentation-letters/{letter_id}/download` | Descarga una carta generada. | Propietario o rol administrativo |
 
 ## Contratos principales
 
-### Generación
+<details>
+<summary><strong>PresentationLetterGenerateRequest</strong></summary>
+
+Payload mínimo para generar una carta.
 
 ```json
 {
@@ -74,45 +145,108 @@ existe plantilla activa y sus datos mínimos están disponibles.
 }
 ```
 
-### Respuesta
+Tipos soportados: `Práctica de Estudio I` y `Práctica de Estudio II`.
+
+</details>
+
+<details>
+<summary><strong>PresentationLetterResponse</strong></summary>
+
+Metadata pública de una carta generada. El archivo no se entrega en este
+contrato; se descarga con el endpoint correspondiente.
 
 ```json
 {
   "id": 12,
-  "student_id": 5,
+  "student_id": 8,
   "practice_type": "Práctica de Estudio I",
-  "template_id": 2,
-  "generated_file_name": "carta_presentacion_5_20260623.pdf",
-  "recipient_email": "estudiante.demo@ufromail.cl",
-  "sent_at": "2026-06-23T12:00:00",
-  "downloaded_at": null,
-  "created_at": "2026-06-23T12:00:00",
-  "updated_at": "2026-06-23T12:00:00"
+  "template_id": 1,
+  "generated_file_name": "carta-presentacion.pdf",
+  "recipient_email": "estudiante@ufromail.cl",
+  "sent_at": "2026-06-24T10:00:00",
+  "downloaded_at": null
 }
 ```
 
-## Diferencia con flujo manual
+</details>
 
-La tarea de planificación puede mencionar solicitud, emisión, rechazo o
-cancelación como si existiera una tramitación manual. Ese alcance queda
-reemplazado por la regla vigente:
+<details>
+<summary><strong>PresentationLetterTemplateUpdateRequest</strong></summary>
 
-- El estudiante genera la carta directamente desde la plataforma.
-- La administración solo mantiene plantillas institucionales.
-- No existe decisión administrativa sobre cada carta individual.
-- No se modelan estados de cola porque no reflejan el proceso real acordado.
+Payload usado por Dirección para mantener el contenido institucional de una
+plantilla. Incluye textos, horas mínimas, aprendizajes esperados y firma.
 
-Si en el futuro se quisiera volver a un flujo manual, debe tratarse como una
-funcionalidad nueva y no como corrección del módulo actual.
+```json
+{
+  "title": "Carta de presentación",
+  "subtitle": "Estudiante en Práctica de Estudio I",
+  "minimum_hours": 168,
+  "learning_outcomes": [
+    "Aplicar conocimientos disciplinares en un contexto real."
+  ],
+  "is_active": true
+}
+```
 
-## Pruebas documentadas
+El contrato real contiene más campos de texto. El detalle completo debe revisarse
+en Swagger/OpenAPI.
 
-La cobertura vigente está registrada en
-`backend/tests/modules/presentation-letters-unitarias.md`:
+</details>
 
-- Gestión de plantillas.
-- Generación automática con datos reales.
-- Contenido diferenciado por tipo de práctica.
-- Error sin plantilla activa.
-- Descarga autorizada y rechazo de carta ajena.
+## Reglas de negocio
 
+#### Plantillas
+
+**Reglas actuales:**
+
+- Solo `Director de carrera` puede editar plantillas.
+- La lectura de plantillas está disponible para roles administrativos.
+- Debe existir una plantilla activa para poder generar una carta.
+- Cada tipo de práctica tiene contenido institucional diferenciado.
+
+#### Generación
+
+**Reglas actuales:**
+
+- Solo usuarios con rol `Estudiante` pueden generar cartas propias.
+- El tipo de práctica debe ser uno de los valores soportados.
+- La carta se construye con datos actuales del estudiante autenticado.
+- Si falta la plantilla activa, el backend responde con error explícito
+  `presentation_letter_template_not_found`.
+- La generación registra `sent_at` cuando la notificación al estudiante queda
+  despachada o simulada correctamente.
+- La carta de presentación es opcional y no bloquea ningún hito obligatorio del
+  proceso de práctica.
+
+#### Descarga
+
+**Reglas actuales:**
+
+- El estudiante solo puede descargar sus propias cartas.
+- Roles administrativos autorizados pueden descargar cartas cuando corresponde.
+- Si el archivo físico no existe, la descarga responde error.
+- La fecha de descarga se actualiza en la metadata de la carta.
+
+> [!WARNING]
+> No se debe guardar ni servir una carta generada en una ruta pública. El control
+> de acceso pertenece al backend.
+
+## Configuración por entorno
+
+| Variable | Uso |
+| --- | --- |
+| `PRESENTATION_LETTER_STORAGE_DIR` | Directorio privado donde se guardan las cartas PDF generadas. |
+| `PRESENTATION_LETTER_DOCX_TEMPLATE_PATH` | Ruta de la plantilla DOCX institucional usada para renderizar cartas. |
+| `LIBREOFFICE_BINARY` | Binario usado para convertir DOCX a PDF. |
+| `LIBREOFFICE_TIMEOUT_SECONDS` | Tiempo máximo permitido para la conversión a PDF. |
+
+## Consideraciones operativas
+
+- El módulo necesita una plantilla DOCX institucional disponible en el backend.
+- La conversión a PDF depende de LibreOffice o del binario configurado.
+- Las cartas generadas deben mantenerse en storage privado.
+- Las notificaciones son efectos secundarios y pueden operar en modo simulado o real.
+- Los contratos exactos de campos, validaciones y errores deben consultarse en
+  Swagger/OpenAPI.
+- Las pruebas unitarias documentadas están en
+  `backend/tests/modules/presentation-letters-unitarias.md`.
