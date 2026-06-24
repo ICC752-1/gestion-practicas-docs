@@ -27,6 +27,8 @@ persistidos, autorización por roles y administración básica de usuarios y rol
 - Iniciar sesión con email y password.
 - Renovar sesiones mediante refresh tokens rotativos.
 - Revocar refresh tokens durante logout.
+- Completar cambio de contraseña temporal.
+- Activar cuentas nuevas mediante enlace de un solo uso.
 - Resolver el usuario autenticado desde un Bearer token.
 - Restringir endpoints mediante roles.
 - Iniciar sesión con Google OAuth.
@@ -42,6 +44,8 @@ el backend. También expone endpoints administrativos para usuarios y roles.
 - Validación de credenciales locales.
 - Emisión de `access_token` y `refresh_token`.
 - Persistencia, rotación y revocación de refresh tokens.
+- Activación de cuentas nuevas mediante token de un solo uso.
+- Reemplazo de credenciales temporales.
 - Validación de Bearer tokens para endpoints protegidos.
 - Autorización basada en roles mediante `require_roles`.
 - Inicio de sesión con Google OAuth y aprovisionamiento básico de estudiantes.
@@ -73,8 +77,8 @@ el backend. También expone endpoints administrativos para usuarios y roles.
 | Service | `app/modules/auth/services/google_oauth_service.py` | Orquesta el flujo OAuth con Google. |
 | Service | `app/modules/auth/services/user_service.py` | Crea y actualiza usuarios con normalización y password hash. |
 | Service | `app/modules/auth/services/role_service.py` | Lista, actualiza, asigna y remueve roles. |
-| Repository | `app/modules/auth/repositories/...` | Encapsula persistencia de usuarios, roles y refresh tokens. |
-| Models | `app/modules/auth/models/...` | Define entidades ORM de usuarios, roles, asignaciones y refresh tokens. |
+| Repository | `app/modules/auth/repositories/...` | Encapsula persistencia de usuarios, roles, refresh tokens y tokens de activación. |
+| Models | `app/modules/auth/models/...` | Define entidades ORM de usuarios, roles, asignaciones, refresh tokens y activación de cuenta. |
 | Schemas | `app/modules/auth/schemas/...` | Define contratos de entrada y salida del módulo. |
 | Utils | `app/modules/auth/utils/normalization.py` | Normaliza RUT y teléfonos. |
 
@@ -85,31 +89,49 @@ datos mediante `app/core/database/database.py`.
 
 #### Login con email y password
 
-1. El cliente llama a `POST /auth/login` con `application/x-www-form-urlencoded`.
-   El campo `username` corresponde al email del usuario.
+1. El cliente llama a `POST /auth/login` con un cuerpo JSON que incluye `email` y
+   `password`.
 2. El controller construye `AuthService` con repositorios y servicios internos.
 3. `AuthService` busca el usuario por email.
 4. `PasswordService` valida la contraseña contra `password_hash`.
 5. Si las credenciales son válidas, se emiten `access_token` y `refresh_token`.
 6. El refresh token se persiste como hash en `refresh_tokens`.
-7. Se retorna `TokenResponse`.
+7. El refresh token también se configura en cookie HTTP-only.
+8. Se retorna `TokenResponse`.
+
+Si el usuario debe reemplazar una contraseña temporal, el backend responde `403`
+con detalle `TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
+
+#### Contraseña temporal y activación de cuenta
+
+1. Un usuario con credencial temporal llama a
+   `POST /auth/complete-temporary-password`.
+2. Envía email, contraseña temporal y nueva contraseña.
+3. Si la credencial temporal es válida, se reemplaza por la contraseña definitiva.
+4. Una cuenta nueva puede consultar datos mínimos con `GET /auth/activation-info`.
+5. La activación final se completa con `POST /auth/activate-account` usando token
+   de enlace, nueva contraseña y año de ingreso opcional.
 
 #### Renovación de sesión
 
-1. El cliente llama a `POST /auth/refresh` con `refresh_token`.
-2. `TokenService` decodifica el JWT y exige `type=refresh`.
-3. `AuthService` obtiene el token persistido por `jti`.
-4. Se valida que no esté revocado, no esté expirado y coincida con su hash.
-5. Se verifica que el usuario exista y esté activo.
-6. El refresh token anterior se revoca.
-7. Se crea una nueva sesión con nuevos tokens.
+1. El cliente llama a `POST /auth/refresh`.
+2. El refresh token puede venir en el body JSON o en la cookie HTTP-only
+   configurada por login/OAuth.
+3. `TokenService` decodifica el JWT y exige `type=refresh`.
+4. `AuthService` obtiene el token persistido por `jti`.
+5. Se valida que no esté revocado, no esté expirado y coincida con su hash.
+6. Se verifica que el usuario exista y esté activo.
+7. El refresh token anterior se revoca.
+8. Se crea una nueva sesión con nuevos tokens y se actualiza la cookie.
 
 #### Logout y revocación
 
 1. El cliente llama a `POST /auth/logout` con Bearer token válido.
-2. Si envía `refresh_token`, se valida que pertenezca al usuario actual.
-3. El refresh token persistido se marca con `revoked_at`.
-4. El endpoint responde `204 No Content`.
+2. El refresh token puede venir en el body JSON o en la cookie HTTP-only.
+3. Si hay refresh token, se valida que pertenezca al usuario actual.
+4. El refresh token persistido se marca con `revoked_at`.
+5. La cookie de refresh se limpia.
+6. El endpoint responde `204 No Content`.
 
 #### Usuario autenticado
 
@@ -146,8 +168,10 @@ datos mediante `app/core/database/database.py`.
 1. Un usuario con rol administrativo llama a endpoints `/users`.
 2. El controller valida autenticación y roles administrativos.
 3. La creación verifica unicidad de email y RUT.
-4. `UserService` hashea password y normaliza RUT/teléfonos.
-5. La actualización solo modifica campos enviados.
+4. Si se envía contraseña, `UserService` la hashea.
+5. Si no se envía contraseña, se prepara activación por enlace.
+6. `UserService` normaliza RUT y teléfonos.
+7. La actualización solo modifica campos enviados.
 
 #### Administración de roles
 
@@ -162,35 +186,86 @@ datos mediante `app/core/database/database.py`.
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | POST | `/auth/login` | Inicia sesión con email y password. | Público |
+| POST | `/auth/complete-temporary-password` | Reemplaza una credencial temporal por contraseña definitiva. | Público con credencial temporal válida |
+| GET | `/auth/activation-info` | Consulta datos mínimos de una cuenta pendiente de activación. | Público con token de activación |
+| POST | `/auth/activate-account` | Activa una cuenta mediante enlace de un solo uso. | Público con token de activación |
 | POST | `/auth/refresh` | Rota un refresh token y emite nuevos tokens. | Refresh token |
 | GET | `/auth/google/login` | Redirige al flujo OAuth de Google. | Público |
 | GET | `/auth/google/callback` | Procesa callback OAuth y redirige al frontend. | Público con `state` válido |
 | GET | `/auth/me` | Retorna el usuario autenticado. | Bearer token |
 | POST | `/auth/logout` | Cierra sesión y revoca refresh token si fue enviado. | Bearer token |
-| POST | `/users` | Crea un usuario. | Rol administrativo |
-| GET | `/users` | Lista usuarios con filtros opcionales. | Rol administrativo |
-| GET | `/users/{user_id}` | Obtiene un usuario por ID. | Rol administrativo |
-| PATCH | `/users/{user_id}` | Actualiza parcialmente un usuario. | Rol administrativo |
-| GET | `/users/{user_id}/roles` | Lista roles de un usuario. | Rol administrativo |
-| POST | `/users/{user_id}/roles` | Asigna un rol a un usuario. | Rol administrativo |
-| DELETE | `/users/{user_id}/roles/{role_id}` | Remueve una asignación usuario-rol. | Rol administrativo |
-| GET | `/roles` | Lista roles existentes. | Rol administrativo |
-| GET | `/roles/{role_id}` | Obtiene un rol por ID. | Rol administrativo |
-| PATCH | `/roles/{role_id}` | Actualiza descripción de un rol. | Rol administrativo |
+| POST | `/users` | Crea un usuario. | Superadmin |
+| GET | `/users` | Lista usuarios con filtros opcionales. | Superadmin |
+| GET | `/users/{user_id}` | Obtiene un usuario por ID. | Superadmin |
+| PATCH | `/users/{user_id}` | Actualiza parcialmente un usuario. | Superadmin |
+| GET | `/users/{user_id}/roles` | Lista roles de un usuario. | Superadmin |
+| POST | `/users/{user_id}/roles` | Asigna un rol a un usuario. | Superadmin |
+| DELETE | `/users/{user_id}/roles/{role_id}` | Remueve una asignación usuario-rol. | Superadmin |
+| GET | `/roles` | Lista roles existentes. | Superadmin |
+| GET | `/roles/{role_id}` | Obtiene un rol por ID. | Superadmin |
+| PATCH | `/roles/{role_id}` | Actualiza descripción de un rol. | Superadmin |
 
 ## Contratos principales
 
 <details>
 <summary><strong>LoginRequest</strong></summary>
 
-Payload usado por `POST /auth/login`. Este endpoint no recibe JSON; usa
-`OAuth2PasswordRequestForm`.
+Payload JSON usado por `POST /auth/login`.
 
-```text
-Content-Type: application/x-www-form-urlencoded
+```json
+{
+  "email": "student@correo.cl",
+  "password": "my_secure_password"
+}
+```
 
-username=student@correo.cl
-password=my_secure_password
+</details>
+
+<details>
+<summary><strong>CompleteTemporaryPasswordRequest</strong></summary>
+
+Payload usado cuando un usuario debe reemplazar una credencial temporal por una
+contraseña definitiva.
+
+```json
+{
+  "email": "student@correo.cl",
+  "temporary_password": "temporary_password",
+  "new_password": "my_secure_password"
+}
+```
+
+</details>
+
+<details>
+<summary><strong>ActivationAccountInfoResponse</strong></summary>
+
+Respuesta de `GET /auth/activation-info` para mostrar datos mínimos antes de
+activar una cuenta.
+
+```json
+{
+  "email": "student@correo.cl",
+  "first_name": "Juan",
+  "last_name": "Pérez",
+  "roles": ["Estudiante"],
+  "admission_year": 2024
+}
+```
+
+</details>
+
+<details>
+<summary><strong>ActivateAccountRequest</strong></summary>
+
+Payload usado para activar una cuenta nueva mediante enlace de un solo uso.
+
+```json
+{
+  "token": "activation-token",
+  "new_password": "my_secure_password",
+  "admission_year": 2024
+}
 ```
 
 </details>
@@ -221,6 +296,9 @@ Payload usado por `POST /auth/refresh`.
 }
 ```
 
+El body es opcional si el refresh token viene en la cookie HTTP-only configurada
+por el backend.
+
 </details>
 
 <details>
@@ -233,6 +311,9 @@ Payload opcional usado por `POST /auth/logout` para revocar la sesión actual.
   "refresh_token": "..."
 }
 ```
+
+El body es opcional si el refresh token viene en la cookie HTTP-only configurada
+por el backend.
 
 </details>
 
@@ -261,14 +342,20 @@ Payload administrativo para crear usuarios.
 ```json
 {
   "email": "user@correo.cl",
-  "password": "my_secure_password",
+  "password": null,
   "first_name": "Juan",
   "last_name": "Pérez",
   "rut": "12.345.678-9",
   "degree": "Ingeniería Civil Informática",
-  "phone": "+56912345678"
+  "cod_degree": "ICI",
+  "admission_year": 2024,
+  "phone": "+56912345678",
+  "role_ids": [1]
 }
 ```
+
+Si no se envía `password`, el backend genera una credencial interna y el usuario
+define su contraseña mediante enlace de activación.
 
 </details>
 
@@ -376,6 +463,8 @@ El refresh token permite renovar sesión sin reutilizar credenciales.
 - Debe estar vigente y sin `revoked_at`.
 - Se revoca durante cada renovación exitosa.
 - La renovación emite un nuevo access token y un nuevo refresh token.
+- Puede recibirse desde body JSON o desde cookie HTTP-only.
+- En una renovación exitosa se actualiza la cookie de refresh.
 
 #### Logout y revocación
 
@@ -383,10 +472,12 @@ El refresh token permite renovar sesión sin reutilizar credenciales.
 
 **Reglas actuales:**
 
-- Si no se envía `refresh_token`, el endpoint responde `204` sin revocar tokens persistidos.
+- Si no se envía `refresh_token` ni existe cookie, el endpoint responde `204` y
+  limpia la cookie si estaba presente en el cliente.
 - Si se envía `refresh_token`, debe pertenecer al usuario autenticado.
 - Si el refresh token es inválido o pertenece a otro usuario, se retorna `400`.
 - Si es válido, se marca `revoked_at` en base de datos.
+- Al finalizar, la cookie de refresh se elimina de la respuesta.
 
 #### Usuario autenticado
 
@@ -405,16 +496,13 @@ El refresh token permite renovar sesión sin reutilizar credenciales.
 `require_roles` permite acceso si el usuario tiene al menos uno de los roles
 permitidos por el endpoint.
 
-**Roles administrativos usados por `/users` y `/roles`:**
+**Rol administrativo usado por `/users` y `/roles`:**
 
-- `Supervisor de practica`
-- `Encargado de practica`
-- `Director de carrera`
-- `Secretaria de Carrera`
+- `Superadmin`
 
 > [!IMPORTANT]
-> `Estudiante` no forma parte de los roles administrativos para gestión de
-> usuarios y roles.
+> Otros roles del sistema pueden tener permisos de negocio en sus propios módulos,
+> pero la administración de usuarios y roles queda reservada a `Superadmin`.
 
 #### Google OAuth
 
@@ -450,11 +538,28 @@ sistema.
 
 - Crear usuario exige email único.
 - Crear usuario exige RUT único.
-- Las contraseñas se almacenan hasheadas.
+- `password` es opcional al crear usuarios administrativos.
+- Si se entrega contraseña, se almacena hasheada.
+- Si no se entrega contraseña, el usuario debe activar su cuenta mediante enlace.
 - `rut`, `phone` y `sup_phone` se normalizan antes de persistir.
 - Los usuarios creados por endpoint administrativo quedan `is_active=True`.
 - Los usuarios creados por endpoint administrativo quedan `is_verified=False`.
+- La creación puede recibir `role_ids` para asignar roles iniciales.
 - La actualización solo modifica campos enviados.
+
+#### Activación de cuenta y contraseña temporal
+
+**Reglas actuales:**
+
+- Los tokens de activación son de un solo uso.
+- `GET /auth/activation-info` expone solo datos mínimos para renderizar la vista
+  de activación.
+- `POST /auth/activate-account` define contraseña definitiva y puede registrar
+  `admission_year`.
+- `POST /auth/complete-temporary-password` reemplaza una credencial temporal por
+  una contraseña definitiva.
+- Si un usuario intenta login con una contraseña temporal pendiente de cambio, el
+  backend responde `TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
 
 #### Administración de roles
 
@@ -474,6 +579,8 @@ sistema.
 | `JWT_ALGORITHM` | Algoritmo JWT usado por `TokenService`. Por defecto `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración de access tokens. |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Duración de refresh tokens persistidos. |
+| `REFRESH_TOKEN_COOKIE_NAME` | Nombre de la cookie HTTP-only usada para refresh/logout. |
+| `REFRESH_TOKEN_COOKIE_SECURE` | Controla si la cookie de refresh exige HTTPS. |
 | `GOOGLE_CLIENT_ID` | Client ID OAuth usado para construir la autorización y validar audiencia. |
 | `GOOGLE_CLIENT_SECRET` | Secreto OAuth usado al intercambiar el código de autorización. |
 | `GOOGLE_REDIRECT_URI` | Callback backend registrado ante Google. |
@@ -482,18 +589,18 @@ sistema.
 | `GOOGLE_FRONTEND_ERROR_URL` | URL frontend a la que se redirigen errores de login Google. |
 | `GOOGLE_STATE_EXPIRE_MINUTES` | Vigencia del token `state` usado en OAuth. |
 | `GOOGLE_STATE_COOKIE_NAME` | Nombre de la cookie HTTP-only usada para validar `state`. |
-| `REFRESH_TOKEN_COOKIE_NAME` | Nombre de la cookie HTTP-only usada para refresh/logout OAuth. |
 | `GOOGLE_COOKIE_SECURE` | Controla si la cookie OAuth exige HTTPS. |
 
 ## Consideraciones operativas
 
-- `/auth/login` usa `application/x-www-form-urlencoded` con `username` y
-  `password`.
-- `/auth/refresh` y `/auth/logout` aceptan JSON body; en el flujo OAuth también
-  pueden usar la cookie `HttpOnly` configurada para el refresh token.
-- `OAuth2PasswordBearer(tokenUrl="auth/login")` define el esquema Bearer para
-  FastAPI y el login usa `OAuth2PasswordRequestForm`.
+- `/auth/login` usa JSON con `email` y `password`.
+- `/auth/login` y el callback de Google configuran una cookie HTTP-only con el
+  refresh token.
+- `/auth/refresh` y `/auth/logout` aceptan refresh token por JSON body o por la
+  cookie HTTP-only configurada por el backend.
 - `JWT_SECRET_KEY` debe configurarse en entornos reales.
+- `REFRESH_TOKEN_COOKIE_SECURE=True` debe usarse cuando la API opere sobre HTTPS.
 - `GOOGLE_COOKIE_SECURE=True` debe usarse cuando el callback OAuth opere sobre HTTPS.
 - `init.sql` siembra roles base y asigna usuario 1 como `Estudiante` y usuario 2 como `Director de carrera`.
-- Los endpoints `/users` y `/roles` requieren que exista al menos un usuario con rol administrativo para operar.
+- Los endpoints `/users` y `/roles` requieren que exista al menos un usuario con
+  rol `Superadmin` para operar.

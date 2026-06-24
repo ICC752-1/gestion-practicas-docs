@@ -31,11 +31,12 @@ simulado según configuración de entorno.
 
 - Persistir notificaciones por usuario destinatario.
 - Listar notificaciones del usuario autenticado.
+- Filtrar notificaciones por estado de lectura, evento y rango de fecha.
+- Consultar contador de notificaciones no leídas.
 - Consultar el detalle de una notificación propia.
+- Marcar una, varias o todas las notificaciones propias como leídas.
 - Crear y despachar notificaciones en modo `simulated` o `real`.
 - Reintentar notificaciones `failed` o `pending`.
-- Consultar contador persistente de notificaciones no leídas.
-- Marcar notificaciones propias como leídas de forma idempotente.
 - Enviar correos directos mediante un endpoint de compatibilidad.
 - Construir contenido HTML transaccional para eventos del sistema.
 
@@ -54,10 +55,10 @@ y la despacha según el modo configurado.
 
 - Persistencia de notificaciones.
 - Consulta de notificaciones por destinatario.
+- Control de lectura mediante `read_at` e `is_read`.
 - Despacho SMTP en modo real.
 - Persistencia simulada en modo desarrollo.
 - Reintento manual de notificaciones fallidas o pendientes.
-- Lectura persistente mediante `read_at`.
 - Construcción de notificaciones HTML desde helpers de eventos.
 - Exposición de un endpoint legacy de envío SMTP directo.
 
@@ -78,9 +79,9 @@ y la despacha según el modo configurado.
 
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
-| Controller | `app/modules/notifications/controllers/notification_controller.py` | Define endpoints de consulta, envío directo y reintento. |
-| Service | `app/modules/notifications/services/notification_service.py` | Orquesta persistencia, modos de operación, SMTP y reintentos. |
-| Repository | `app/modules/notifications/repositories/notification_repository.py` | Encapsula creación, consulta por destinatario, consulta por estado y actualización de estado. |
+| Controller | `app/modules/notifications/controllers/notification_controller.py` | Define endpoints de consulta, lectura, envío directo y reintento. |
+| Service | `app/modules/notifications/services/notification_service.py` | Orquesta persistencia, modos de operación, lectura, SMTP y reintentos. |
+| Repository | `app/modules/notifications/repositories/notification_repository.py` | Encapsula creación, consulta por destinatario, filtros, conteos y actualización de estado. |
 | Models | `app/modules/notifications/models/notification_model.py` | Define `Notification`, `NotificationEventTypeEnum` y `NotificationStatusEnum`. |
 | Schemas | `app/modules/notifications/schemas/notification_schema.py` | Define contratos HTTP de envío, listado, detalle y reintento. |
 | Utils | `app/modules/notifications/utils/notification_event_helpers.py` | Construye notificaciones HTML para eventos funcionales del sistema. |
@@ -96,11 +97,22 @@ desde `auth`, y es consumido por `admin`, `internships`, `documents`,
 1. El usuario llama a `GET /notifications`.
 2. El controller valida Bearer token.
 3. Se usan `limit` y `offset` para paginación.
-4. El service consulta notificaciones asociadas a `recipient_user_id`.
-5. Opcionalmente filtra por `is_read`, `event_type`, `created_from` y `created_to`.
+4. Opcionalmente se filtra por `is_read`, `event_type`, `created_from` y
+   `created_to`.
+5. El service consulta notificaciones asociadas a `recipient_user_id`.
 6. El repository ordena por `created_at` descendente.
-7. Se retorna `NotificationListResponse` con items, total, contador de no leídas,
+7. Se retorna una respuesta paginada con `items`, `total`, `unread_count`,
    `limit` y `offset`.
+
+#### Contador y lectura de notificaciones
+
+1. El usuario llama a `GET /notifications/unread-count` para obtener el contador
+   de no leídas.
+2. Puede marcar una notificación con `PATCH /notifications/{notification_id}/read`.
+3. Puede marcar varias con `PATCH /notifications/read` enviando IDs.
+4. Puede marcar todas sus notificaciones con `PATCH /notifications/read-all`.
+5. Las operaciones son idempotentes y retornan cuántas se actualizaron y el nuevo
+   contador de no leídas.
 
 #### Detalle de notificación
 
@@ -144,83 +156,36 @@ desde `auth`, y es consumido por `admin`, `internships`, `documents`,
 7. Si falla, se actualiza a `failed`.
 8. Si no existe, no es elegible o no hay mailer, el controller responde `404`.
 
-#### Lectura persistente
-
-1. `GET /notifications/unread-count` retorna `{ "unread_count": n }`.
-2. `PATCH /notifications/{notification_id}/read` marca una notificación propia.
-3. `PATCH /notifications/read` marca una lista explícita enviada en
-   `notification_ids`.
-4. `PATCH /notifications/read-all` marca todas las notificaciones propias.
-5. Las operaciones son idempotentes: una notificación ya leída no incrementa
-   `updated_count`.
-6. Ningún endpoint permite marcar notificaciones de otro usuario.
-
 ## Endpoints disponibles
 
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | GET | `/notifications` | Lista notificaciones del usuario autenticado. | Bearer token |
-| GET | `/notifications/unread-count` | Retorna contador persistente de no leídas. | Bearer token |
-| PATCH | `/notifications/read` | Marca una lista de notificaciones propias como leídas. | Bearer token |
+| GET | `/notifications/unread-count` | Retorna contador de notificaciones no leídas. | Bearer token |
+| PATCH | `/notifications/read` | Marca varias notificaciones propias como leídas. | Bearer token |
 | PATCH | `/notifications/read-all` | Marca todas las notificaciones propias como leídas. | Bearer token |
 | PATCH | `/notifications/{notification_id}/read` | Marca una notificación propia como leída. | Bearer token |
 | GET | `/notifications/{notification_id}` | Obtiene detalle de una notificación propia. | Destinatario |
 | POST | `/notifications/send-email` | Envía correo directo sin persistir notificación. | Encargado de practica, Director de carrera, Secretaria de Carrera |
 | POST | `/notifications/{notification_id}/retry` | Reintenta notificación `failed` o `pending`. | Encargado de practica, Director de carrera |
 
+Parámetros principales de `GET /notifications`:
+
+| Parámetro | Uso |
+| --- | --- |
+| `limit` | Cantidad máxima de resultados, entre `1` y `100`. |
+| `offset` | Desplazamiento de paginación. |
+| `is_read` | Filtra leídas o no leídas. |
+| `event_type` | Filtra por tipo de evento. |
+| `created_from` | Fecha inicial de creación. |
+| `created_to` | Fecha final de creación. |
+
 ## Contratos principales
-
-<details>
-<summary><strong>NotificationListItemResponse</strong></summary>
-
-Representa una notificación en el listado del usuario autenticado.
-
-```json
-{
-  "id": 10,
-  "event_type": "internship_approved",
-  "subject": "Solicitud de práctica aprobada",
-  "status": "simulated",
-  "created_at": "2026-06-16T12:00:00Z",
-  "sent_at": null,
-  "read_at": null,
-  "is_read": false
-}
-```
-
-</details>
-
-<details>
-<summary><strong>NotificationDetailResponse</strong></summary>
-
-Representa el detalle de una notificación propia.
-
-```json
-{
-  "id": 10,
-  "recipient_user_id": 5,
-  "recipient_email": "student@ufromail.cl",
-  "event_type": "internship_rejected",
-  "subject": "Solicitud de práctica rechazada",
-  "content": "<html>...</html>",
-  "status": "simulated",
-  "payload": {
-    "internship_id": 7,
-    "reason": "No cumple requisitos"
-  },
-  "created_at": "2026-06-16T12:00:00Z",
-  "sent_at": null,
-  "read_at": null,
-  "is_read": false
-}
-```
-
-</details>
 
 <details>
 <summary><strong>NotificationListResponse</strong></summary>
 
-Respuesta paginada del listado de notificaciones.
+Representa el listado paginado de notificaciones del usuario autenticado.
 
 ```json
 {
@@ -246,9 +211,37 @@ Respuesta paginada del listado de notificaciones.
 </details>
 
 <details>
+<summary><strong>NotificationDetailResponse</strong></summary>
+
+Representa el detalle de una notificación propia.
+
+```json
+{
+  "id": 10,
+  "recipient_user_id": 5,
+  "recipient_email": "student@ufromail.cl",
+  "event_type": "internship_rejected",
+  "subject": "Solicitud de práctica rechazada",
+  "content": "<html>...</html>",
+  "status": "simulated",
+  "payload": {
+    "internship_id": 7,
+    "reason": "No cumple requisitos"
+  },
+  "created_at": "2026-06-16T12:00:00Z",
+  "sent_at": null,
+  "read_at": "2026-06-16T13:00:00Z",
+  "is_read": true
+}
+```
+
+</details>
+
+<details>
 <summary><strong>MarkNotificationsReadRequest</strong></summary>
 
-Payload para marcar varias notificaciones propias como leídas.
+Payload usado por `PATCH /notifications/read` para marcar varias notificaciones
+propias como leídas.
 
 ```json
 {
@@ -261,12 +254,12 @@ Payload para marcar varias notificaciones propias como leídas.
 <details>
 <summary><strong>MarkNotificationsReadResponse</strong></summary>
 
-Respuesta de las operaciones de lectura.
+Respuesta de las operaciones de marcado como leído.
 
 ```json
 {
-  "updated_count": 2,
-  "unread_count": 4
+  "updated_count": 3,
+  "unread_count": 0
 }
 ```
 
@@ -317,6 +310,8 @@ Respuesta tras intentar reenviar una notificación persistente.
 | `supervisor_evaluations` | Invitación temporal enviada al supervisor. | `custom` | `event`, `internship_id`. |
 | `documents` | Documento cargado. | `custom` | `event`, `document_id`, `internship_id`, `document_type`. |
 | `documents` | Estado documental cambiado. | `custom` | `event`, `document_id`, `internship_id`, `new_status`, `comment`. |
+| `scheduling` | Cita o presentación agendada. | `appointment_scheduled` | `internship_id`, datos de cita. |
+| `scheduling` | Presentación aprobada. | `presentation_approved` | `internship_id`, datos de presentación. |
 | `admin` | Estado de requisito cambiado. | `requirement_status_changed` | `requirement_id`, `requirement_type`, `new_status`, `previous_status`. |
 
 > [!IMPORTANT]
@@ -341,7 +336,10 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 | `payload` | Metadata JSONB del evento. |
 | `created_at` | Fecha de creación. |
 | `sent_at` | Fecha de envío real. Es `NULL` para `simulated`, `pending` o `failed`. |
-| `read_at` | Fecha de lectura dentro de la plataforma. Es `NULL` mientras está no leída. |
+| `read_at` | Fecha en que el usuario marcó la notificación como leída. |
+
+`is_read` no se almacena como columna independiente; se calcula a partir de
+`read_at`.
 
 #### Estados de notificación
 
@@ -360,7 +358,9 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 | `internship_rejected` | Notifica rechazo de solicitud de práctica. |
 | `internship_derived` | Notifica preparación interna del expediente para trámite DIRAE. No informa estado externo de DIRAE. |
 | `requirement_status_changed` | Notifica cambio de estado de requisito. |
+| `appointment_scheduled` | Notifica una cita o presentación agendada. |
 | `custom` | Agrupa eventos que no tienen valor enum propio. |
+| `presentation_approved` | Notifica aprobación de presentación. |
 
 #### Invitación de evaluación del supervisor
 
@@ -385,22 +385,31 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 
 #### Modos de operación
 
-- En modo `simulated`, las notificaciones se persisten con estado `simulated` y no se llama SMTP.
-- En modo `real`, las notificaciones se persisten con estado `pending` y luego se intenta SMTP.
+- En modo `simulated`, las notificaciones se persisten con estado `simulated` y
+  no se llama SMTP.
+- En modo `real`, las notificaciones se persisten con estado `pending` y luego se
+  intenta SMTP.
 - Si SMTP funciona, el estado pasa a `sent` y se registra `sent_at`.
 - Si SMTP falla, el estado pasa a `failed`.
-- Si `NOTIFICATION_MODE=real` pero las credenciales son las de prueba, el mailer no se configura y las notificaciones se persisten como `simulated`.
+- Si `NOTIFICATION_MODE=real` pero las credenciales son las de prueba, el mailer
+  no se configura y las notificaciones se persisten como `simulated`.
 
 #### Consulta
 
 - `GET /notifications` solo retorna notificaciones del usuario autenticado.
-- `GET /notifications` acepta filtros `is_read`, `event_type`, `created_from` y
-  `created_to`.
-- `GET /notifications/{notification_id}` solo permite consultar notificaciones propias.
-- `GET /notifications/unread-count` calcula no leídas desde `read_at IS NULL`.
-- Las rutas `PATCH /notifications/read`, `PATCH /notifications/read-all` y
-  `PATCH /notifications/{notification_id}/read` solo afectan notificaciones del
-  usuario autenticado.
+- `GET /notifications` soporta filtros por lectura, evento y rango de creación.
+- La respuesta incluye `total` y `unread_count`.
+- `GET /notifications/{notification_id}` solo permite consultar notificaciones
+  propias.
+
+#### Lectura
+
+- Una notificación está leída cuando `read_at` no es `NULL`.
+- El marcado como leído solo aplica a notificaciones del usuario autenticado.
+- Marcar como leída una notificación ya leída no debe fallar.
+- `PATCH /notifications/read-all` marca todas las notificaciones propias no
+  leídas.
+- Las operaciones de lectura retornan `updated_count` y el nuevo `unread_count`.
 
 #### Reintento
 
@@ -437,17 +446,18 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 
 - Una notificación `simulated` fue persistida, pero no enviada por correo.
 - El endpoint `send-email` directo no deja registro en la tabla `notification`.
-- El contenido HTML se construye con helpers internos y escapa valores dinámicos con `html.escape`.
+- El contenido HTML se construye con helpers internos y escapa valores dinámicos
+  con `html.escape`.
 - No guardar credenciales SMTP en documentación, logs ni payloads.
 - No existe cola externa, scheduler ni reintento automático.
-- Si se necesita entrega garantizada, se requiere un worker o cola fuera de la implementación actual.
-- El módulo maneja estado leído/no leído persistente con `read_at`.
-- El módulo no maneja preferencias de usuario, digest/resumen periódico ni
-  recordatorios automáticos programados.
+- Si se necesita entrega garantizada, se requiere un worker o cola fuera de la
+  implementación actual.
+- El módulo maneja estado leído/no leído, pero no preferencias de notificación por
+  usuario.
 
 ## Documentación relacionada
 
-- `docs/modules/internships/internships-technical-reference.md`: Describe eventos de práctica que generan notificaciones.
-- `docs/modules/documents/documents-technical-reference.md`: Describe eventos documentales que generan notificaciones.
-- `docs/modules/admin.md`: Describe cambios de requisitos que pueden generar notificaciones.
+- `backend/modules/internships/internships-technical-reference.md`: Describe eventos de práctica que generan notificaciones.
+- `backend/modules/documents/documents-technical-reference.md`: Describe eventos documentales que generan notificaciones.
+- `backend/modules/admin.md`: Describe cambios de requisitos que pueden generar notificaciones.
 - `app/modules/notifications/utils/notification_event_helpers.py`: Define helpers de construcción de contenido y payload.

@@ -25,6 +25,8 @@ requisitos asociados al proceso de práctica.
 **Permite:**
 
 - Ver un resumen global del sistema.
+- Consultar reportes agregados del proceso de prácticas.
+- Exportar reportes agregados en CSV sin datos personales sensibles.
 - Listar estudiantes registrados.
 - Listar y consultar prácticas desde una vista administrativa.
 - Revisar requisitos académicos de práctica por estudiante.
@@ -42,6 +44,9 @@ No es el dueño del flujo completo de **creación** ni **aprobación** de práct
 #### Responsabilidades principales
 
 - Agregaciones para dashboard administrativo.
+- Reportes agregados filtrables por fecha, carrera, tipo de práctica, periodo,
+  estado, organización y ciudad.
+- Exportación CSV de métricas agregadas.
 - Consulta administrativa de estudiantes.
 - Consulta administrativa de prácticas.
 - Gestión de requisitos académicos de práctica.
@@ -54,6 +59,7 @@ No es el dueño del flujo completo de **creación** ni **aprobación** de práct
 - Acciones principales del flujo de práctica como aprobar, rechazar o derivar.
 - Autenticación de usuarios.
 - Carga y revisión documental.
+- Exportación de datos personales de estudiantes.
 
 > [!IMPORTANT]
 > Los endpoints `/internships/{id}/approve`, `/internships/{id}/reject` y
@@ -65,9 +71,13 @@ No es el dueño del flujo completo de **creación** ni **aprobación** de práct
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
 | Controller | `app/modules/admin/controllers/admin_controller.py` | Define rutas HTTP, dependencias y roles requeridos. |
+| Controller | `app/modules/admin/controllers/admin_report_controller.py` | Define rutas HTTP para reportes agregados y exportación CSV. |
 | Service | `app/modules/admin/services/admin_service.py` | Orquesta reglas administrativas y validaciones. |
+| Service | `app/modules/admin/services/admin_report_service.py` | Calcula métricas agregadas, alcance por rol y CSV de reportes. |
 | Repository | `app/modules/admin/repositories/admin_repository.py` | Encapsula consultas administrativas a base de datos. |
+| Repository | `app/modules/admin/repositories/admin_report_repository.py` | Encapsula consultas agregadas para reportes. |
 | Schemas | `app/modules/admin/schemas/admin_schema.py` | Define contratos de entrada y salida del módulo. |
+| Schemas | `app/modules/admin/schemas/admin_report_schema.py` | Define contratos de reportes agregados. |
 
 El módulo reutiliza modelos definidos en otros dominios, principalmente
 **usuarios**, **roles**, **prácticas** y **requisitos de inscripción**.
@@ -82,6 +92,26 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 3. El service solicita agregaciones al repository.
 4. El repository calcula totales y conteos por estado.
 5. Se retorna `AdminSummaryResponse`.
+
+#### Reportes agregados
+
+1. El cliente llama a `GET /admin/reports/dashboard`.
+2. El controller exige rol `FICA`, `Encargado de practica` o `Director de carrera`.
+3. Se aplican filtros opcionales de fecha, carrera, tipo de práctica, periodo,
+   estado, organización y ciudad.
+4. El service aplica alcance según rol: `FICA` puede consultar transversalmente;
+   roles de carrera se restringen a su `cod_degree` cuando existe.
+5. Se calculan totales, distribuciones, tasas, tiempos, documentos,
+   evaluaciones y alertas de cumplimiento.
+6. Se retorna `AdminReportResponse` sin datos personales sensibles.
+
+#### Exportación CSV de reportes
+
+1. El cliente llama a `GET /admin/reports/export.csv` con los mismos filtros del
+   dashboard agregado.
+2. El backend calcula el reporte con el mismo alcance por rol.
+3. Se retorna un CSV UTF-8 con métricas agregadas.
+4. El CSV no incluye RUT, correos ni documentos personales.
 
 #### Listado administrativo de prácticas
 
@@ -133,6 +163,8 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 | Método | Ruta | Propósito | Rol |
 | --- | --- | --- | --- |
 | GET | `/admin/summary` | Resumen global del sistema. | Encargado de practica, Director de carrera |
+| GET | `/admin/reports/dashboard` | Reporte agregado filtrable. | FICA, Encargado de practica, Director de carrera |
+| GET | `/admin/reports/export.csv` | Exporta reporte agregado en CSV. | FICA, Encargado de practica, Director de carrera |
 | GET | `/admin/students` | Listado administrativo de estudiantes. | Encargado de practica, Director de carrera |
 | GET | `/admin/internships` | Listado administrativo de prácticas. | Encargado de practica, Director de carrera |
 | GET | `/admin/internships/{internship_id}` | Detalle administrativo de una práctica. | Encargado de practica, Director de carrera |
@@ -141,6 +173,21 @@ El módulo reutiliza modelos definidos en otros dominios, principalmente
 | PATCH | `/admin/students/{student_id}/internship-requirements/{requirement_id}/status` | Actualiza estado de requisito académico. | Encargado de practica, Director de carrera |
 | GET | `/admin/students/{student_id}/registration-requirements` | Lista prerrequisitos institucionales. | Director de carrera |
 | PATCH | `/admin/students/{student_id}/registration-requirements/school-insurance` | Crea o actualiza seguro escolar institucional histórico. | Director de carrera |
+
+Parámetros principales de reportes:
+
+| Parámetro | Uso |
+| --- | --- |
+| `date_from` | Fecha inicial del rango. |
+| `date_to` | Fecha final del rango. |
+| `career` | Filtro por nombre de carrera. |
+| `career_code` | Filtro por código de carrera. |
+| `practice_type` | Filtro por tipo de práctica. |
+| `period` | Filtro por periodo. |
+| `status` | Filtro por estado. |
+| `organization` | Filtro por organización. |
+| `city` | Filtro por ciudad. |
+| `timezone` | Zona horaria usada para el reporte. Por defecto `America/Santiago`. |
 
 ## Contratos principales
 
@@ -163,6 +210,40 @@ Resume métricas globales para _dashboard administrativo_.
       "total": 12
     }
   ]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>AdminReportResponse</strong></summary>
+
+Reporte agregado para paneles administrativos y FICA. Resume métricas sin
+exponer datos personales sensibles. El siguiente ejemplo muestra un extracto del
+contrato completo.
+
+```json
+{
+  "generated_at": "2026-06-24T12:00:00Z",
+  "scope": {
+    "role": "FICA",
+    "is_cross_career": true,
+    "career_code": null
+  },
+  "totals": [
+    {
+      "label": "Prácticas filtradas",
+      "value": 45,
+      "description": "Denominador principal para tasas del reporte."
+    }
+  ],
+  "by_status": [],
+  "rates": [],
+  "documents": {
+    "complete_packages": 20,
+    "missing_required_packages": 5,
+    "exportable_to_dirae": 12
+  }
 }
 ```
 
@@ -252,6 +333,27 @@ Representa un **prerrequisito institucional** del estudiante.
 
 ## Reglas de negocio
 
+#### Reportes agregados
+
+**Reglas actuales:**
+
+- `FICA` puede consultar reportes con alcance transversal.
+- `Encargado de practica` y `Director de carrera` pueden consultar reportes.
+- Si el actor tiene `cod_degree`, el backend restringe el reporte a esa carrera.
+- Si un actor de carrera intenta solicitar otro `career_code`, se responde `403`.
+- El CSV usa los mismos filtros y el mismo alcance que el dashboard agregado.
+- La exportación CSV no incluye RUT, correos ni documentos personales.
+
+**Métricas principales:**
+
+- Totales de prácticas y estudiantes.
+- Distribuciones por estado, carrera, tipo, periodo y ciudad.
+- Tasas de aprobación, rechazo, cancelación y finalización.
+- Tiempos promedio/mediana desde registro hasta decisiones administrativas.
+- Resumen documental y exportabilidad DIRAE.
+- Estado agregado de autoevaluaciones y evaluaciones de supervisor.
+- Alertas de cumplimiento como seguro escolar fuera de periodo y prácticas activas vencidas.
+
 #### Filtros de prácticas
 
 `GET /admin/internships` acepta el query opcional **`status`**.
@@ -329,11 +431,16 @@ booleano de apoyo diagnóstico.
 ## Consideraciones operativas
 
 - Todos los endpoints exigen autenticación.
-- Los endpoints generales del módulo requieren rol `Encargado de practica`.
-- Los endpoints de lectura administrativa de prácticas también aceptan
+- Los endpoints operativos de lectura aceptan `Encargado de practica` y
   `Director de carrera`.
 - Los endpoints de seguro escolar requieren `Director de carrera`.
+- Los endpoints de reportes aceptan `FICA`, `Encargado de practica` y
+  `Director de carrera`.
+- Los reportes aplican alcance por carrera cuando el actor tiene `cod_degree`.
 - El cambio de estado de requisito registra `status_updated_at` y `status_updated_by`.
 - Si el requisito académico no existe para el estudiante indicado, se retorna `404`.
 - El `PATCH` de seguro escolar retorna `404` si el usuario no existe o no tiene rol `Estudiante`.
-- El dashboard coordinador debería consumir `/admin/summary`, `/admin/internships` y `/admin/internships/{internship_id}` para vistas administrativas.
+- El dashboard coordinador debería consumir `/admin/summary`, `/admin/internships`
+  y `/admin/internships/{internship_id}` para vistas administrativas.
+- Los paneles de métricas deberían consumir `/admin/reports/dashboard` o
+  `/admin/reports/export.csv` según necesiten visualización o descarga.
