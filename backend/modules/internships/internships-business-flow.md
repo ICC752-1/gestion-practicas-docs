@@ -664,12 +664,14 @@ estudiante.
    contrato actual de notificaciones; podría agregarse después si el módulo de
    email incorpora adjuntos, destinatarios institucionales configurables y
    auditoría del envío.
-10. **Sin persistencia de lote MVP:** La exportación se genera dinámicamente y no
-   crea lotes persistidos en esta versión.
+10. **Sin persistencia de lote en la versión actual:** La exportación se genera
+   dinámicamente y no crea lotes persistidos.
 11. **Evento auditable definido:** La exportación deja definido el evento
    `dirae_export_generated` con actor, fecha, prácticas, documentos, archivo y
-   resultado local para integrarlo con la auditoría funcional cuando 11.5 esté
-   disponible. Este evento no confirma recepción ni procesamiento por DIRAE.
+   resultado local. Este evento es auditoría local de exportación, pero no
+   reemplaza el módulo transversal de auditoría descrito en
+   `backend/core/auditoria-funcional.md`. Tampoco confirma recepción ni
+   procesamiento por DIRAE.
 
 ### Resultado Técnico
 

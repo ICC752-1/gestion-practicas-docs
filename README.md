@@ -12,12 +12,14 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 ### Core
 
 - [`backend/core/logging.md`](backend/core/logging.md): configuración real del sistema de logging, handlers, formatos, rotación y eventos registrados.
+- [`backend/core/auditoria-funcional.md`](backend/core/auditoria-funcional.md): trazabilidad funcional existente, límites de auditoría transversal y deuda pendiente.
 
 ### Módulos
 
 - [`backend/modules/admin.md`](backend/modules/admin.md): operaciones administrativas, consultas, requisitos y reglas del módulo `admin`.
 - [`backend/modules/auth.md`](backend/modules/auth.md): autenticación, usuarios, roles, JWT, refresh tokens y OAuth Google.
 - [`backend/modules/notifications.md`](backend/modules/notifications.md): notificaciones persistentes, eventos, estados, SMTP y modo simulado.
+- [`backend/modules/presentation-letters.md`](backend/modules/presentation-letters.md): cartas de presentación automáticas, plantillas, descarga y alcance vigente.
 - [`backend/modules/internships/internships-technical-reference.md`](backend/modules/internships/internships-technical-reference.md): referencia técnica principal del módulo de prácticas.
 - [`backend/modules/internships/internships-business-flow.md`](backend/modules/internships/internships-business-flow.md): reglas de negocio y flujo funcional de prácticas.
 - [`backend/modules/internships/internships-tracking.md`](backend/modules/internships/internships-tracking.md): trazabilidad de estados y acciones administrativas de prácticas.
@@ -27,6 +29,8 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 ### Convenciones
 
 - [`backend/conventions/insomnia.md`](backend/conventions/insomnia.md): convención para colecciones Insomnia de pruebas manuales de API.
+- [`backend/conventions/seed-demo.md`](backend/conventions/seed-demo.md): alcance, usuarios y bordes no cubiertos del seed demo QA.
+- [`backend/conventions/rbac-qa-matrix.md`](backend/conventions/rbac-qa-matrix.md): matriz de permisos críticos por rol para QA funcional.
 - [`backend/conventions/development-standards.md`](backend/conventions/development-standards.md): estándares de ramas, commits, PRs, versionado y codificación backend.
 - [`backend/conventions/database-naming.md`](backend/conventions/database-naming.md): convención de nombres BD/ORM para tablas, enums, modelos y llaves foráneas.
 

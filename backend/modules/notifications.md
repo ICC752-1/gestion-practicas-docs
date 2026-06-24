@@ -34,6 +34,8 @@ simulado según configuración de entorno.
 - Consultar el detalle de una notificación propia.
 - Crear y despachar notificaciones en modo `simulated` o `real`.
 - Reintentar notificaciones `failed` o `pending`.
+- Consultar contador persistente de notificaciones no leídas.
+- Marcar notificaciones propias como leídas de forma idempotente.
 - Enviar correos directos mediante un endpoint de compatibilidad.
 - Construir contenido HTML transaccional para eventos del sistema.
 
@@ -55,6 +57,7 @@ y la despacha según el modo configurado.
 - Despacho SMTP en modo real.
 - Persistencia simulada en modo desarrollo.
 - Reintento manual de notificaciones fallidas o pendientes.
+- Lectura persistente mediante `read_at`.
 - Construcción de notificaciones HTML desde helpers de eventos.
 - Exposición de un endpoint legacy de envío SMTP directo.
 
@@ -63,7 +66,7 @@ y la despacha según el modo configurado.
 - Determinar reglas de negocio de prácticas, documentos o requisitos.
 - Bloquear flujos principales si falla una notificación emitida como efecto secundario.
 - Gestionar colas externas o workers de reintento automático.
-- Marcar notificaciones como leídas.
+- Preferencias de usuario, digest/resumen periódico o recordatorios programados.
 - Gestionar plantillas externas o configurables por base de datos.
 - Reemplazar auditoría técnica o logs operativos.
 
@@ -94,8 +97,10 @@ desde `auth`, y es consumido por `admin`, `internships`, `documents`,
 2. El controller valida Bearer token.
 3. Se usan `limit` y `offset` para paginación.
 4. El service consulta notificaciones asociadas a `recipient_user_id`.
-5. El repository ordena por `created_at` descendente.
-6. Se retorna una lista de `NotificationListItemResponse`.
+5. Opcionalmente filtra por `is_read`, `event_type`, `created_from` y `created_to`.
+6. El repository ordena por `created_at` descendente.
+7. Se retorna `NotificationListResponse` con items, total, contador de no leídas,
+   `limit` y `offset`.
 
 #### Detalle de notificación
 
@@ -139,11 +144,26 @@ desde `auth`, y es consumido por `admin`, `internships`, `documents`,
 7. Si falla, se actualiza a `failed`.
 8. Si no existe, no es elegible o no hay mailer, el controller responde `404`.
 
+#### Lectura persistente
+
+1. `GET /notifications/unread-count` retorna `{ "unread_count": n }`.
+2. `PATCH /notifications/{notification_id}/read` marca una notificación propia.
+3. `PATCH /notifications/read` marca una lista explícita enviada en
+   `notification_ids`.
+4. `PATCH /notifications/read-all` marca todas las notificaciones propias.
+5. Las operaciones son idempotentes: una notificación ya leída no incrementa
+   `updated_count`.
+6. Ningún endpoint permite marcar notificaciones de otro usuario.
+
 ## Endpoints disponibles
 
 | Método | Ruta | Propósito | Acceso |
 | --- | --- | --- | --- |
 | GET | `/notifications` | Lista notificaciones del usuario autenticado. | Bearer token |
+| GET | `/notifications/unread-count` | Retorna contador persistente de no leídas. | Bearer token |
+| PATCH | `/notifications/read` | Marca una lista de notificaciones propias como leídas. | Bearer token |
+| PATCH | `/notifications/read-all` | Marca todas las notificaciones propias como leídas. | Bearer token |
+| PATCH | `/notifications/{notification_id}/read` | Marca una notificación propia como leída. | Bearer token |
 | GET | `/notifications/{notification_id}` | Obtiene detalle de una notificación propia. | Destinatario |
 | POST | `/notifications/send-email` | Envía correo directo sin persistir notificación. | Encargado de practica, Director de carrera, Secretaria de Carrera |
 | POST | `/notifications/{notification_id}/retry` | Reintenta notificación `failed` o `pending`. | Encargado de practica, Director de carrera |
@@ -162,7 +182,9 @@ Representa una notificación en el listado del usuario autenticado.
   "subject": "Solicitud de práctica aprobada",
   "status": "simulated",
   "created_at": "2026-06-16T12:00:00Z",
-  "sent_at": null
+  "sent_at": null,
+  "read_at": null,
+  "is_read": false
 }
 ```
 
@@ -187,7 +209,64 @@ Representa el detalle de una notificación propia.
     "reason": "No cumple requisitos"
   },
   "created_at": "2026-06-16T12:00:00Z",
-  "sent_at": null
+  "sent_at": null,
+  "read_at": null,
+  "is_read": false
+}
+```
+
+</details>
+
+<details>
+<summary><strong>NotificationListResponse</strong></summary>
+
+Respuesta paginada del listado de notificaciones.
+
+```json
+{
+  "items": [
+    {
+      "id": 10,
+      "event_type": "internship_approved",
+      "subject": "Solicitud de práctica aprobada",
+      "status": "simulated",
+      "created_at": "2026-06-16T12:00:00Z",
+      "sent_at": null,
+      "read_at": null,
+      "is_read": false
+    }
+  ],
+  "total": 1,
+  "unread_count": 1,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+</details>
+
+<details>
+<summary><strong>MarkNotificationsReadRequest</strong></summary>
+
+Payload para marcar varias notificaciones propias como leídas.
+
+```json
+{
+  "notification_ids": [10, 11, 12]
+}
+```
+
+</details>
+
+<details>
+<summary><strong>MarkNotificationsReadResponse</strong></summary>
+
+Respuesta de las operaciones de lectura.
+
+```json
+{
+  "updated_count": 2,
+  "unread_count": 4
 }
 ```
 
@@ -262,6 +341,7 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 | `payload` | Metadata JSONB del evento. |
 | `created_at` | Fecha de creación. |
 | `sent_at` | Fecha de envío real. Es `NULL` para `simulated`, `pending` o `failed`. |
+| `read_at` | Fecha de lectura dentro de la plataforma. Es `NULL` mientras está no leída. |
 
 #### Estados de notificación
 
@@ -314,8 +394,13 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 #### Consulta
 
 - `GET /notifications` solo retorna notificaciones del usuario autenticado.
+- `GET /notifications` acepta filtros `is_read`, `event_type`, `created_from` y
+  `created_to`.
 - `GET /notifications/{notification_id}` solo permite consultar notificaciones propias.
-- No existe endpoint para marcar notificaciones como leídas.
+- `GET /notifications/unread-count` calcula no leídas desde `read_at IS NULL`.
+- Las rutas `PATCH /notifications/read`, `PATCH /notifications/read-all` y
+  `PATCH /notifications/{notification_id}/read` solo afectan notificaciones del
+  usuario autenticado.
 
 #### Reintento
 
@@ -356,7 +441,9 @@ Las notificaciones persistentes se guardan en la tabla `notification`.
 - No guardar credenciales SMTP en documentación, logs ni payloads.
 - No existe cola externa, scheduler ni reintento automático.
 - Si se necesita entrega garantizada, se requiere un worker o cola fuera de la implementación actual.
-- El módulo no maneja preferencias de usuario ni estado leído/no leído.
+- El módulo maneja estado leído/no leído persistente con `read_at`.
+- El módulo no maneja preferencias de usuario, digest/resumen periódico ni
+  recordatorios automáticos programados.
 
 ## Documentación relacionada
 

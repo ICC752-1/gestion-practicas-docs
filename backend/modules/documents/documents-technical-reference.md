@@ -455,7 +455,8 @@ con `deleted_at` no se consideran aprobados para el paquete.
 - Con `internship_ids`, cualquier práctica no exportable produce `409` con razones.
 - Sin `internship_ids`, se exportan solo las prácticas exportables disponibles.
 - Sin paquetes exportables, el CSV puede contener solo encabezado.
-- El service construye un evento `dirae_export_generated` como dato de auditoría de la exportación.
+- El service construye y persiste un evento local `dirae_export_generated` como
+  dato de auditoría de la exportación.
 - El contrato actual solo genera descarga CSV. No envía correo con archivo
   adjunto; para soportarlo habría que extender el módulo `notifications` con
   adjuntos, destinatario institucional configurable y auditoría de envío.
