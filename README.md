@@ -55,6 +55,14 @@ La carpeta `backend/` contiene la documentación técnica asociada al backend de
 
 La carpeta `frontend/` agrupa la documentación técnica asociada al frontend del sistema.
 
+### Core
+
+- [`frontend/README.md`](frontend/README.md): índice de la documentación técnica del frontend.
+- [`frontend/core/architecture.md`](frontend/core/architecture.md): arquitectura real del frontend, estructura de carpetas, capas y responsabilidades.
+- [`frontend/core/authentication.md`](frontend/core/authentication.md): autenticación frontend, restauración de sesión, OAuth, logout, roles y manejo de tokens.
+- [`frontend/core/api-client.md`](frontend/core/api-client.md): cliente HTTP Axios, configuración de API, interceptores, refresh automático y patrón de servicios.
+- [`frontend/core/routing-and-roles.md`](frontend/core/routing-and-roles.md): rutas públicas, rutas protegidas, roles frontend, `PrivateRoute` y redirecciones por rol.
+
 ## Deployment
 
 La carpeta `deployment/` agrupa la documentación técnica asociada al despliegue y ejecución del sistema.
