@@ -15,6 +15,11 @@
 - [`core/routing-and-roles.md`](core/routing-and-roles.md): rutas publicas, rutas
   protegidas, roles frontend y redirecciones.
 
+## Pruebas
+
+- [`tests/README.md`](tests/README.md): casos minimos propuestos para pruebas
+  frontend de rutas, sesion, cliente API e inscripcion.
+
 > [!NOTE]
 > La documentacion frontend describe el comportamiento real de la implementacion
 > actual. No reemplaza OpenAPI ni la documentacion tecnica del backend para

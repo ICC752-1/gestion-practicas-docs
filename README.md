@@ -63,6 +63,10 @@ La carpeta `frontend/` agrupa la documentación técnica asociada al frontend de
 - [`frontend/core/api-client.md`](frontend/core/api-client.md): cliente HTTP Axios, configuración de API, interceptores, refresh automático y patrón de servicios.
 - [`frontend/core/routing-and-roles.md`](frontend/core/routing-and-roles.md): rutas públicas, rutas protegidas, roles frontend, `PrivateRoute` y redirecciones por rol.
 
+### Pruebas
+
+- [`frontend/tests/README.md`](frontend/tests/README.md): casos mínimos propuestos para pruebas frontend de rutas, sesión, cliente API e inscripción.
+
 ## Deployment
 
 La carpeta `deployment/` agrupa la documentación técnica asociada al despliegue y ejecución del sistema.
