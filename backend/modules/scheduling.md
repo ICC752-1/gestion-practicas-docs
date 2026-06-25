@@ -268,4 +268,4 @@ Payload usado para registrar qué ocurrió en una cita.
 - Los contratos exactos de campos, validaciones y errores deben consultarse en
   Swagger/OpenAPI.
 - Las pruebas unitarias documentadas están en
-  `backend/tests/modules/scheduling-unitarias.md`.
+  `backend/tests/modules/scheduling/scheduling-unitarias.md`.

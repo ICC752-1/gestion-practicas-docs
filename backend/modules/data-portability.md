@@ -230,4 +230,4 @@ Representa la auditoría funcional de una solicitud de exportación.
 - Los contratos exactos de campos, validaciones y errores deben consultarse en
   Swagger/OpenAPI.
 - Las pruebas unitarias documentadas están en
-  `backend/tests/modules/data-portability-unitarias.md`.
+  `backend/tests/modules/data-portability/data-portability-unitarias.md`.

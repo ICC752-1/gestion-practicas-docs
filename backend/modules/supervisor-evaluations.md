@@ -254,4 +254,4 @@ Recomendaciones soportadas: `recommended`, `recommended_with_observations` y
 - Los contratos exactos de campos, validaciones y errores deben consultarse en
   Swagger/OpenAPI.
 - Las pruebas unitarias documentadas están en
-  `backend/tests/modules/supervisor-evaluations-unitarias.md`.
+  `backend/tests/modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`.

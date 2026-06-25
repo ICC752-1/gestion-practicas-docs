@@ -249,4 +249,4 @@ en Swagger/OpenAPI.
 - Los contratos exactos de campos, validaciones y errores deben consultarse en
   Swagger/OpenAPI.
 - Las pruebas unitarias documentadas están en
-  `backend/tests/modules/presentation-letters-unitarias.md`.
+  `backend/tests/modules/presentation-letters/presentation-letters-unitarias.md`.

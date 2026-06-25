@@ -251,4 +251,4 @@ Payload usado por administración para permitir una corrección posterior al env
 - Los contratos exactos de campos, validaciones y errores deben consultarse en
   Swagger/OpenAPI.
 - Las pruebas unitarias documentadas están en
-  `backend/tests/modules/self-evaluations-unitarias.md`.
+  `backend/tests/modules/self-evaluations/self-evaluations-unitarias.md`.
