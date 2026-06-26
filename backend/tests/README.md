@@ -45,19 +45,19 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Admin | 9 | 20 | 3 | 7 | 3 | 0 | 3 |
-| Auth | 21 | 80 | 7 | 16 | 3 | 0 | 3 |
+| Admin | 9 | 20 | 3 | 7 | 0 | 0 | 0 |
+| Auth | 21 | 80 | 7 | 16 | 1 | 1 | 0 |
 | Data portability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| Documents | 13 | 54 | 5 | 8 | 3 | 0 | 3 |
-| Internships | 28 | 133 | 2 | 5 | 2 | 0 | 2 |
-| Notifications | 9 | 18 | 5 | 8 | 3 | 0 | 3 |
+| Documents | 13 | 54 | 5 | 8 | 1 | 1 | 0 |
+| Internships | 28 | 133 | 2 | 5 | 2 | 2 | 0 |
+| Notifications | 9 | 18 | 5 | 8 | 1 | 1 | 0 |
 | Presentation letters | 6 | 9 | 0 | 0 | 0 | 0 | 0 |
 | Scheduling | 10 | 42 | 0 | 0 | 0 | 0 | 0 |
 | Self evaluations | 3 | 7 | 0 | 0 | 0 | 0 | 0 |
 | Supervisor evaluations | 4 | 10 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **105** | **375** | **22** | **44** | **14** | **0** | **14** |
+| **Total** | **105** | **375** | **22** | **44** | **5** | **5** | **0** |
 
-En total hay 141 casos documentados y 419 referencias a tests automatizados de módulos funcionales. Los 14 casos end-to-end están documentados como pendientes de implementación.
+En total hay 132 casos documentados y 424 referencias a tests automatizados de módulos funcionales. Los 5 casos end-to-end están implementados y sustituyen los flujos E2E extensos anteriores por una suite acotada de mayor valor.
 
 ## Índice de casos de prueba
 
@@ -77,9 +77,6 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-AD-01 | Integración | Admin | Roles de lectura administrativa permiten decisión académica | 2 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
 | CU-I-AD-02 | Integración | Admin | Seguro escolar queda restringido a Dirección de carrera | 3 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
 | CU-I-AD-03 | Integración | Admin | Reportes administrativos usan roles propios de análisis | 2 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
-| CU-E2E-AD-01 | End-to-end | Admin | Coordinador consulta dashboard y detalle de práctica | Pendiente | [`modules/admin/admin-end-to-end.md`](modules/admin/admin-end-to-end.md) |
-| CU-E2E-AD-02 | End-to-end | Admin | Coordinador actualiza requisito académico y estudiante recibe notificación | Pendiente | [`modules/admin/admin-end-to-end.md`](modules/admin/admin-end-to-end.md) |
-| CU-E2E-AD-03 | End-to-end | Admin | Director valida seguro escolar y práctica fuera de periodo regular puede aprobarse | Pendiente | [`modules/admin/admin-end-to-end.md`](modules/admin/admin-end-to-end.md) |
 | CU-U-AU-01 | Unitaria | Auth | Credenciales locales válidas o incorrectas | 4 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-02 | Unitaria | Auth | Login emite tokens y persiste refresh token como hash | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-03 | Unitaria | Auth | Creación de sesión para usuario emite claims y refresh persistido | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
@@ -108,9 +105,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-AU-05 | Integración | Auth | `/auth/me` no expone credenciales ni campos sensibles | 1 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-06 | Integración | Auth | Activación de cuenta expone contrato de estado inicial | 2 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-07 | Integración | Auth | Google controller maneja cookie, state y redirect | 4 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
-| CU-E2E-AU-01 | End-to-end | Auth | Login local, consulta de usuario actual y logout | Pendiente | [`modules/auth/auth-end-to-end.md`](modules/auth/auth-end-to-end.md) |
-| CU-E2E-AU-02 | End-to-end | Auth | Login y rotación de refresh token | Pendiente | [`modules/auth/auth-end-to-end.md`](modules/auth/auth-end-to-end.md) |
-| CU-E2E-AU-03 | End-to-end | Auth | Google OAuth completo en entorno controlado | Pendiente | [`modules/auth/auth-end-to-end.md`](modules/auth/auth-end-to-end.md) |
+| CU-E2E-AU-01 | End-to-end | Auth | Login, usuario actual, refresh y logout | 1 | [`modules/auth/auth-end-to-end.md`](modules/auth/auth-end-to-end.md) |
 | CU-U-DP-01 | Unitaria | Data portability | Exportación JSON minimiza campos sensibles | 1 | [`modules/data-portability/data-portability-unitarias.md`](modules/data-portability/data-portability-unitarias.md) |
 | CU-U-DP-02 | Unitaria | Data portability | Exportación requiere rol estudiante | 1 | [`modules/data-portability/data-portability-unitarias.md`](modules/data-portability/data-portability-unitarias.md) |
 | CU-U-DO-01 | Unitaria | Documents | Carga documental válida persiste metadata y archivo privado | 1 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
@@ -131,9 +126,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-DO-03 | Integración | Documents | Roles documentales restringen revisión y exportación | 2 | [`modules/documents/documents-integracion.md`](modules/documents/documents-integracion.md) |
 | CU-I-DO-04 | Integración | Documents | Exportación HTTP de paquetes DIRAE conserva contrato CSV | 1 | [`modules/documents/documents-integracion.md`](modules/documents/documents-integracion.md) |
 | CU-I-DO-05 | Integración | Documents | Controller propaga errores de servicio | 1 | [`modules/documents/documents-integracion.md`](modules/documents/documents-integracion.md) |
-| CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
-| CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
-| CU-E2E-DO-03 | End-to-end | Documents | Exportación de expediente para DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
+| CU-E2E-DO-01 | End-to-end | Documents | Estudiante sube documento y rol documental lo aprueba | 1 | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
 | CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 2 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-02 | Unitaria | Internships | Exigir validación explícita de seguro por solicitud fuera de periodo regular | 2 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión fuera de periodo regular sin seguro | 1 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
@@ -164,8 +157,8 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-IN-28 | Unitaria | Internships | Transición de estado de bajo nivel conserva historial y matriz válida | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-I-IN-01 | Integración | Internships | Tracking permite propietario y roles privilegiados | 4 | [`modules/internships/internships-integracion.md`](modules/internships/internships-integracion.md) |
 | CU-I-IN-02 | Integración | Internships | Dashboard rechaza rol estudiante | 1 | [`modules/internships/internships-integracion.md`](modules/internships/internships-integracion.md) |
-| CU-E2E-IN-01 | End-to-end | Internships | Flujo completo de Práctica I aprobada | Pendiente | [`modules/internships/internships-end-to-end.md`](modules/internships/internships-end-to-end.md) |
-| CU-E2E-IN-02 | End-to-end | Internships | Flujo completo fuera de periodo regular bloqueado y luego aprobado | Pendiente | [`modules/internships/internships-end-to-end.md`](modules/internships/internships-end-to-end.md) |
+| CU-E2E-IN-01 | End-to-end | Internships | Estudiante crea práctica y administración la aprueba | 1 | [`modules/internships/internships-end-to-end.md`](modules/internships/internships-end-to-end.md) |
+| CU-E2E-IN-02 | End-to-end | Internships | Práctica fuera de periodo se bloquea hasta validar seguro | 1 | [`modules/internships/internships-end-to-end.md`](modules/internships/internships-end-to-end.md) |
 | CU-U-NO-01 | Unitaria | Notifications | Persistir notificaciones simuladas sin invocar SMTP | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-02 | Unitaria | Notifications | Enviar notificaciones reales y registrar resultado de entrega | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-03 | Unitaria | Notifications | Evitar envío real cuando la configuración SMTP no está lista | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
@@ -180,9 +173,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-NO-03 | Integración | Notifications | Controller de reintento traduce resultado operacional | 2 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |
 | CU-I-NO-04 | Integración | Notifications | Eventos de solicitud y expediente se persisten en modo simulado | 1 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |
 | CU-I-NO-05 | Integración | Notifications | Eventos documentales se persisten en modo simulado | 1 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |
-| CU-E2E-NO-01 | End-to-end | Notifications | Usuario consulta notificaciones generadas por una práctica | Pendiente | [`modules/notifications/notifications-end-to-end.md`](modules/notifications/notifications-end-to-end.md) |
-| CU-E2E-NO-02 | End-to-end | Notifications | Flujo documental genera notificaciones visibles para participantes | Pendiente | [`modules/notifications/notifications-end-to-end.md`](modules/notifications/notifications-end-to-end.md) |
-| CU-E2E-NO-03 | End-to-end | Notifications | Reintento operativo de notificación fallida | Pendiente | [`modules/notifications/notifications-end-to-end.md`](modules/notifications/notifications-end-to-end.md) |
+| CU-E2E-NO-01 | End-to-end | Notifications | Acción real genera notificación visible para el estudiante | 1 | [`modules/notifications/notifications-end-to-end.md`](modules/notifications/notifications-end-to-end.md) |
 | CU-U-PL-01 | Unitaria | Presentation letters | Dirección gestiona plantillas de cartas | 3 | [`modules/presentation-letters/presentation-letters-unitarias.md`](modules/presentation-letters/presentation-letters-unitarias.md) |
 | CU-U-PL-02 | Unitaria | Presentation letters | Estudiante genera carta con datos reales y notificación | 1 | [`modules/presentation-letters/presentation-letters-unitarias.md`](modules/presentation-letters/presentation-letters-unitarias.md) |
 | CU-U-PL-03 | Unitaria | Presentation letters | Carta de Práctica II usa contenido diferenciado | 1 | [`modules/presentation-letters/presentation-letters-unitarias.md`](modules/presentation-letters/presentation-letters-unitarias.md) |
@@ -213,7 +204,6 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | --- | --- |
 | `modules/admin/admin-unitarias.md` | Casos unitarios del módulo `admin`. |
 | `modules/admin/admin-integracion.md` | Casos de integración del módulo `admin`. |
-| `modules/admin/admin-end-to-end.md` | Flujos end-to-end documentados del módulo `admin`. |
 | `modules/auth/auth-unitarias.md` | Casos unitarios del módulo `auth`. |
 | `modules/auth/auth-integracion.md` | Casos de integración del módulo `auth`. |
 | `modules/auth/auth-end-to-end.md` | Flujos end-to-end documentados del módulo `auth`. |
