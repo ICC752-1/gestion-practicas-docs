@@ -67,10 +67,12 @@ Estos casos documentan las pruebas unitarias de valor del módulo `supervisor_ev
 - **Objetivo:** Validar permisos de lectura y asignaciones por correo autenticado.
 - **Escenario:** Roles no autorizados intentan leer evaluación y supervisor consulta prácticas asociadas a su correo.
 - **Variantes cubiertas:**
-  - Secretaría y FICA no pueden leer evaluación de supervisor.
+  - Roles no administrativos no pueden leer evaluación de supervisor.
+  - Secretaría puede leer evaluación de supervisor.
   - Supervisor ve asignaciones cuyo email coincide con el autenticado.
 - **Resultado esperado:** La lectura queda limitada a actores autorizados.
 - **Valor de negocio:** Protege datos de evaluación y evita exposición entre supervisores.
 - **Pruebas automatizadas:**
   - `tests/modules/supervisor_evaluations/test_supervisor_evaluation_service.py::test_non_admin_role_cannot_read_supervisor_evaluation`
+  - `tests/modules/supervisor_evaluations/test_supervisor_evaluation_service.py::test_secretary_can_read_supervisor_evaluation`
   - `tests/modules/supervisor_evaluations/test_supervisor_evaluation_service.py::test_supervisor_assignments_match_authenticated_email`

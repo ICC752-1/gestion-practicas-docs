@@ -22,6 +22,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - **Valor de negocio:** Protege al estudiante y a la institución frente a una aprobación sin cobertura válida.
 - **Pruebas automatizadas:**
   - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_seasonal_without_insurance_raises_409`
+  - `tests/modules/internships/test_induction_service.py::TestIntegratedRules::test_approve_seasonal_with_exception_allows_advance`
 
 ### CU-U-IN-02: Exigir validación explícita de seguro por solicitud fuera de periodo regular
 
@@ -285,6 +286,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Requisito `school_insurance` completado produce `has_school_insurance=True`.
   - Sin requisito produce `has_school_insurance=False`.
   - Requisito existente pero incompleto produce `has_school_insurance=False`.
+  - Creación de Práctica I sin inducción se rechaza.
   - La solicitud queda asociada al usuario autenticado, no a un valor enviado por el cliente.
 - **Resultado esperado:** El valor persistido se calcula desde la fuente institucional.
 - **Valor de negocio:** Mantiene la autoridad del backend sobre requisitos institucionales.
@@ -292,6 +294,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_induction_service.py::TestSchoolInsuranceComputation::test_create_sets_insurance_true_when_student_has_requirement`
   - `tests/modules/internships/test_induction_service.py::TestSchoolInsuranceComputation::test_create_sets_insurance_false_when_student_lacks_requirement`
   - `tests/modules/internships/test_induction_service.py::TestSchoolInsuranceComputation::test_create_sets_insurance_false_when_requirement_not_completed`
+  - `tests/modules/internships/test_induction_service.py::TestSchoolInsuranceComputation::test_create_rejects_when_induction_is_missing`
   - `tests/modules/internships/test_internship_service.py::test_create_internship_assigns_authenticated_user_id`
 
 ### CU-U-IN-17: Dashboard normaliza estados y calcula estadísticas
@@ -369,8 +372,10 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Modalidad `Híbrido` es aceptada.
   - Monto negativo es rechazado.
   - Campos opcionales pueden omitirse.
+  - Descripción de beneficios puede venir en blanco.
   - Campos requeridos en blanco son rechazados.
   - Email de supervisor inválido es rechazado.
+  - Registro semestral y estival conserva contrato de periodo y seguro.
 - **Resultado esperado:** El schema acepta solo contratos válidos y rechaza datos inválidos con `ValidationError`.
 - **Valor de negocio:** Protege la calidad de datos de solicitudes de práctica.
 - **Pruebas automatizadas:**
@@ -380,9 +385,12 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_accepts_hybrid_modality_with_accent`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_negative_amount`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_allows_optional_fields_to_be_omitted`
+  - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_accepts_blank_ben_description`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_blank_required_text`
   - `tests/modules/internships/test_internship_schema.py::test_internship_create_request_rejects_invalid_supervisor_email`
   - `tests/modules/internships/test_internship_schema.py::test_register_semester_ok`
+  - `tests/modules/internships/test_internship_schema.py::test_register_summer_no_insurance`
+  - `tests/modules/internships/test_internship_schema.py::test_register_summer_with_insurance`
 
 ### CU-U-IN-21: Contrato de excepción valida regla y motivo
 
@@ -417,12 +425,9 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Propietario puede leer sin rol privilegiado.
   - Rol privilegiado puede leer práctica ajena.
   - Estudiante no propietario sin rol privilegiado no puede leer.
-  - Helper de roles detecta presencia o ausencia de roles permitidos.
 - **Resultado esperado:** Solo propietario o rol privilegiado obtiene permiso de lectura.
 - **Valor de negocio:** Protege información sensible de prácticas y estudiantes.
 - **Pruebas automatizadas:**
-  - `tests/modules/internships/test_internship_permissions.py::test_has_any_role_returns_true_when_user_has_allowed_role`
-  - `tests/modules/internships/test_internship_permissions.py::test_has_any_role_returns_false_when_user_lacks_allowed_roles`
   - `tests/modules/internships/test_internship_permissions.py::test_can_read_internship_allows_owner_without_privileged_role`
   - `tests/modules/internships/test_internship_permissions.py::test_can_read_internship_allows_privileged_role_for_non_owner`
   - `tests/modules/internships/test_internship_permissions.py::test_can_read_internship_rejects_non_owner_without_privileged_role`
@@ -446,3 +451,156 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/internships/test_internship_model.py::test_internship_model_includes_supervisor_snapshot_columns`
   - `tests/modules/internships/test_internship_model.py::test_internship_modality_enum_matches_database_contract`
   - `tests/modules/internships/test_internship_model.py::test_internship_status_history_model_matches_database_contract`
+
+### CU-U-IN-24: Inducción publicada y cuestionario mantienen contrato para estudiantes
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Internships
+- **Contexto:** El contenido activo de inducción y sus intentos determinan si un estudiante puede avanzar en Práctica I.
+- **Objetivo:** Validar consulta de contenido publicado, preservación de opciones y cálculo de aprobación de intentos.
+- **Escenario:** Se consulta inducción activa y se envían intentos con respuestas correctas, insuficientes o inválidas.
+- **Variantes cubiertas:**
+  - Contenido publicado activo se retorna.
+  - Opciones con claves estables se preservan.
+  - Ausencia de contenido activo retorna vacío funcional.
+  - Puntaje suficiente aprueba intento.
+  - Puntaje bajo reprueba intento.
+  - Sin contenido activo se rechaza intento.
+  - Preguntas desconocidas se ignoran.
+  - Intento queda persistido.
+- **Resultado esperado:** El estudiante ve contenido seguro y sus intentos se evalúan con reglas determinísticas.
+- **Valor de negocio:** Protege el prerrequisito de inducción que habilita el flujo de Práctica I.
+- **Pruebas automatizadas:**
+  - `tests/modules/internships/test_induction_service.py::TestInductionContent::test_get_active_induction_content_returns_content_when_published`
+  - `tests/modules/internships/test_induction_service.py::TestInductionContent::test_get_active_induction_content_preserves_keyed_options`
+  - `tests/modules/internships/test_induction_service.py::TestInductionContent::test_get_active_induction_content_returns_none_when_no_content`
+  - `tests/modules/internships/test_induction_service.py::TestInductionAttempt::test_submit_attempt_passes_when_score_meets_minimum`
+  - `tests/modules/internships/test_induction_service.py::TestInductionAttempt::test_submit_attempt_fails_when_score_below_minimum`
+  - `tests/modules/internships/test_induction_service.py::TestInductionAttempt::test_submit_attempt_fails_with_no_active_content`
+  - `tests/modules/internships/test_induction_service.py::TestInductionAttempt::test_submit_attempt_ignores_unknown_question_ids`
+  - `tests/modules/internships/test_induction_service.py::TestInductionAttempt::test_submit_attempt_persists_attempt_record`
+
+### CU-U-IN-25: Administración de inducción restringe roles, payload y publicación
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Internships
+- **Contexto:** La administración puede crear y publicar versiones de inducción que luego impactan elegibilidad estudiantil.
+- **Objetivo:** Validar permisos administrativos, contrato de preguntas y ciclo draft/publicado.
+- **Escenario:** Roles autorizados administran contenido, roles no autorizados fallan y payloads inválidos se rechazan.
+- **Variantes cubiertas:**
+  - Roles administrativos autorizados pasan política de inducción.
+  - Roles no autorizados reciben rechazo.
+  - Respuesta correcta debe existir entre opciones.
+  - Puntaje mínimo no puede exceder cantidad de preguntas.
+  - Respuesta pública para estudiante no expone respuesta correcta.
+  - Respuesta administrativa sí expone respuesta correcta.
+  - Draft persiste contenido estructurado.
+  - Versión publicada no puede editarse.
+  - Publicación marca versión activa.
+  - Consulta de inducción activa es determinística y limitada.
+- **Resultado esperado:** El contenido publicado queda controlado, seguro para estudiantes y consistente para evaluación.
+- **Valor de negocio:** Evita publicar inducciones inválidas o filtrar respuestas correctas.
+- **Pruebas automatizadas:**
+  - `tests/modules/internships/test_induction_admin_service.py::test_induction_admin_roles_are_authorized`
+  - `tests/modules/internships/test_induction_admin_service.py::test_induction_admin_rejects_non_authorized_roles`
+  - `tests/modules/internships/test_induction_admin_service.py::test_payload_rejects_correct_answer_outside_options`
+  - `tests/modules/internships/test_induction_admin_service.py::test_payload_rejects_min_score_greater_than_question_count`
+  - `tests/modules/internships/test_induction_admin_service.py::test_student_induction_question_response_does_not_expose_correct_answer`
+  - `tests/modules/internships/test_induction_admin_service.py::test_admin_induction_question_response_exposes_correct_answer`
+  - `tests/modules/internships/test_induction_admin_service.py::test_create_draft_persists_structured_content`
+  - `tests/modules/internships/test_induction_admin_service.py::test_update_published_version_is_rejected`
+  - `tests/modules/internships/test_induction_admin_service.py::test_publish_marks_version_active`
+  - `tests/modules/internships/test_induction_repository.py::test_active_induction_query_is_deterministic_and_limited`
+
+### CU-U-IN-26: Acciones administrativas validan permisos, estados y expediente DIRAE
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Internships
+- **Contexto:** Aprobar, rechazar, derivar y reabrir expediente DIRAE son decisiones administrativas sensibles.
+- **Objetivo:** Cubrir ramas válidas e inválidas no incluidas en los casos de transición principales.
+- **Escenario:** Actores autorizados y no autorizados ejecutan aprobación, rechazo, derivación y reapertura DIRAE.
+- **Variantes cubiertas:**
+  - Aprobación a revisión no notifica aprobación final.
+  - Rol sin permiso para aprobar recibe `403`.
+  - Práctica inexistente retorna `404`.
+  - Rechazos válidos desde `Pendiente` y `En revisión`.
+  - Rol sin permiso para rechazar recibe `403`.
+  - Derivación válida desde aprobada finalizada.
+  - Derivación desde estados o cierre incompleto se rechaza.
+  - Estado DIRAE ya en revisión se rechaza.
+  - Reapertura DIRAE desde `ready` o `exported` registra observación.
+  - Reapertura exige comentario, estado reabrible y rol autorizado.
+- **Resultado esperado:** Las acciones solo se aplican con actor, estado y justificación válidos.
+- **Valor de negocio:** Protege decisiones administrativas y evita inconsistencias entre solicitud y expediente DIRAE.
+- **Pruebas automatizadas:**
+  - `tests/modules/internships/test_internship_actions.py::TestApprove::test_encargado_no_notifica_aprobacion_al_pasar_a_en_revision`
+  - `tests/modules/internships/test_internship_actions.py::TestApprove::test_rol_sin_permiso_approve_lanza_403`
+  - `tests/modules/internships/test_internship_actions.py::TestApprove::test_inexistente_lanza_404`
+  - `tests/modules/internships/test_internship_actions.py::TestReject::test_rechazo_valido_desde_pendiente`
+  - `tests/modules/internships/test_internship_actions.py::TestReject::test_rechazo_valido_desde_en_revision`
+  - `tests/modules/internships/test_internship_actions.py::TestReject::test_rol_incorrecto_lanza_403`
+  - `tests/modules/internships/test_internship_actions.py::TestReject::test_inexistente_lanza_404`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_derivacion_valida_desde_aprobada_finalizada`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_derivacion_desde_pendiente_lanza_409`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_derivacion_desde_aprobada_no_finalizada_lanza_409`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_rol_incorrecto_lanza_403`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_dirae_ya_en_revision_lanza_409`
+  - `tests/modules/internships/test_internship_actions.py::TestDerive::test_inexistente_lanza_404`
+  - `tests/modules/internships/test_internship_actions.py::TestDiraeRectification::test_reapertura_valida_desde_ready_registra_observed`
+  - `tests/modules/internships/test_internship_actions.py::TestDiraeRectification::test_reapertura_valida_desde_exported_registra_observed`
+  - `tests/modules/internships/test_internship_actions.py::TestDiraeRectification::test_reapertura_exige_comentario`
+  - `tests/modules/internships/test_internship_actions.py::TestDiraeRectification::test_reapertura_rechaza_estado_no_reabrible`
+  - `tests/modules/internships/test_internship_actions.py::TestDiraeRectification::test_reapertura_rechaza_rol_sin_permiso`
+
+### CU-U-IN-27: Estudiante edita, anula o registra prácticas con ventana y duplicidad controladas
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Internships
+- **Contexto:** El estudiante puede corregir una solicitud reciente, pero no debe alterar trámites avanzados ni duplicar prácticas activas del mismo tipo.
+- **Objetivo:** Validar ventana de edición, propiedad, trazabilidad, revalidación y bloqueo de duplicados.
+- **Escenario:** Estudiante consulta acciones disponibles, edita, anula o intenta crear una práctica duplicada.
+- **Variantes cubiertas:**
+  - Acciones disponibles para propietario pendiente dentro de ventana.
+  - Edición registra motivo, acción y campos modificados.
+  - Anulación estudiantil registra acción específica.
+  - No propietario, ventana expirada, estado no pendiente o acción administrativa previa bloquean edición.
+  - Motivo en blanco se rechaza.
+  - Cambio de tipo revalida secuencialidad.
+  - Creación rechaza práctica bloqueante del mismo tipo.
+  - Nueva solicitud queda marcada como bloqueante.
+  - Elegibilidad informa práctica bloqueante.
+- **Resultado esperado:** El estudiante puede corregir errores tempranos sin romper trazabilidad ni duplicar trámites activos.
+- **Valor de negocio:** Reduce carga administrativa y protege consistencia del ciclo de inscripción.
+- **Pruebas automatizadas:**
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_actions_available_for_owner_pending_within_window`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_records_reason_action_and_changed_fields`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_cancel_records_student_cancel_action`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_rejects_non_owner`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_rejects_expired_window`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_rejects_non_pending_status`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_rejects_after_administrative_action`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_rejects_blank_reason`
+  - `tests/modules/internships/test_student_edit_cancel_internships.py::test_student_update_revalidates_sequentiality_when_type_changes`
+  - `tests/modules/internships/test_student_duplicate_internships.py::test_create_internship_rejects_blocking_same_type`
+  - `tests/modules/internships/test_student_duplicate_internships.py::test_create_internship_marks_new_request_as_blocking`
+  - `tests/modules/internships/test_student_duplicate_internships.py::test_registration_eligibility_reports_blocking_internship`
+
+### CU-U-IN-28: Transición de estado de bajo nivel conserva historial y matriz válida
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Internships
+- **Contexto:** La transición interna de estados es reutilizada por acciones administrativas y debe registrar historial consistente.
+- **Objetivo:** Validar actualización de estado, historial, matriz no secuencial y rechazo de transiciones inválidas.
+- **Escenario:** Se transiciona una práctica entre estados permitidos e inválidos.
+- **Variantes cubiertas:**
+  - Transición válida actualiza estado e historial.
+  - Matriz de revisión no secuencial se permite cuando corresponde.
+  - Transición inválida se rechaza.
+  - `Reprobada` se trata como estado rechazado para normalización.
+- **Resultado esperado:** Las transiciones internas preservan matriz y trazabilidad.
+- **Valor de negocio:** Reduce regresiones en acciones de alto nivel que dependen del motor de estados.
+- **Pruebas automatizadas:**
+  - `tests/modules/internships/test_internship_service.py::test_transition_internship_status_updates_status_and_history`
+  - `tests/modules/internships/test_internship_service.py::test_transition_internship_status_allows_non_sequential_review_matrix`
+  - `tests/modules/internships/test_internship_service.py::test_transition_internship_status_rejects_invalid_transition`
+  - `tests/modules/internships/test_internship_service.py::test_transition_internship_status_treats_reprobada_as_rejected`

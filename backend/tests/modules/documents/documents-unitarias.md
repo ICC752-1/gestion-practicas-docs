@@ -52,6 +52,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Estudiante no propietario devuelve `403`.
   - Práctica aprobada sin observación pendiente devuelve `409`.
   - Práctica aprobada con documento observado permite corrección.
+  - Diapositivas de presentación pueden cargarse después de aprobación.
 - **Resultado esperado:** Solo actores autorizados pueden cargar documentos en estados funcionales válidos.
 - **Valor de negocio:** Protege consistencia documental y permite corregir observaciones sin reabrir todo el trámite.
 - **Pruebas automatizadas:**
@@ -61,6 +62,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/documents/test_document_service.py::test_upload_rejects_terminal_internship`
   - `tests/modules/documents/test_document_service.py::test_student_can_upload_correction_for_observed_document_after_approval`
   - `tests/modules/documents/test_document_service.py::test_student_cannot_upload_new_document_after_approval_without_observation`
+  - `tests/modules/documents/test_document_service.py::test_student_can_upload_presentation_slides_after_approval`
 
 ### CU-U-DO-04: Secretaría solo carga documentos administrativos no sensibles
 

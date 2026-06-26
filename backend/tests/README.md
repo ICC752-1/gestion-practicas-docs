@@ -46,18 +46,18 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Admin | 9 | 20 | 3 | 7 | 3 | 0 | 3 |
-| Auth | 17 | 52 | 7 | 16 | 3 | 0 | 3 |
+| Auth | 21 | 80 | 7 | 16 | 3 | 0 | 3 |
 | Data portability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| Documents | 13 | 53 | 5 | 8 | 3 | 0 | 3 |
-| Internships | 23 | 80 | 2 | 5 | 2 | 0 | 2 |
+| Documents | 13 | 54 | 5 | 8 | 3 | 0 | 3 |
+| Internships | 28 | 133 | 2 | 5 | 2 | 0 | 2 |
 | Notifications | 9 | 18 | 5 | 8 | 3 | 0 | 3 |
 | Presentation letters | 6 | 9 | 0 | 0 | 0 | 0 | 0 |
-| Scheduling | 4 | 15 | 0 | 0 | 0 | 0 | 0 |
+| Scheduling | 10 | 42 | 0 | 0 | 0 | 0 | 0 |
 | Self evaluations | 3 | 7 | 0 | 0 | 0 | 0 | 0 |
-| Supervisor evaluations | 4 | 9 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **90** | **265** | **22** | **44** | **14** | **0** | **14** |
+| Supervisor evaluations | 4 | 10 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **105** | **375** | **22** | **44** | **14** | **0** | **14** |
 
-En total hay 126 casos documentados y 309 referencias a tests automatizados. Los 14 casos end-to-end están documentados como pendientes de implementación.
+En total hay 141 casos documentados y 419 referencias a tests automatizados de módulos funcionales. Los 14 casos end-to-end están documentados como pendientes de implementación.
 
 ## Índice de casos de prueba
 
@@ -89,14 +89,18 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AU-07 | Unitaria | Auth | Logout revoca refresh token válido y tolera ausencia de token | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-08 | Unitaria | Auth | Logout rechaza refresh inválido o de otro usuario | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-09 | Unitaria | Auth | TokenService emite y valida claims críticos | 11 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
-| CU-U-AU-10 | Unitaria | Auth | RefreshTokenRepository valida vigencia temporal | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-10 | Unitaria | Auth | RefreshTokenRepository valida vigencia temporal | 4 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-11 | Unitaria | Auth | PasswordService hashea y valida contraseñas | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
-| CU-U-AU-12 | Unitaria | Auth | RUT y teléfonos se normalizan y validan | 9 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-12 | Unitaria | Auth | RUT y teléfonos se normalizan y validan | 12 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-13 | Unitaria | Auth | Dependencia de roles permite o rechaza según autorización | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-14 | Unitaria | Auth | Google OAuth construye URL y valida callback | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-15 | Unitaria | Auth | Google OAuth emite sesión para usuario existente | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-16 | Unitaria | Auth | Google OAuth crea estudiante para dominio permitido | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-17 | Unitaria | Auth | Google OAuth rechaza dominio o código inválido | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-18 | Unitaria | Auth | Password temporal y activación de cuenta protegen el primer acceso | 7 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-19 | Unitaria | Auth | Administración de usuarios queda restringida a Superadmin | 6 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-20 | Unitaria | Auth | Seed demo conserva contratos seguros para QA local | 9 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-21 | Unitaria | Auth | Notificación de activación no bloquea creación de usuario | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-I-AU-01 | Integración | Auth | `get_current_user` rechaza refresh token como Bearer | 1 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-02 | Integración | Auth | Controller de login expone contrato de sesión | 3 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-03 | Integración | Auth | Controller de refresh renueva sesión desde body o cookie | 3 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
@@ -111,7 +115,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-DP-02 | Unitaria | Data portability | Exportación requiere rol estudiante | 1 | [`modules/data-portability/data-portability-unitarias.md`](modules/data-portability/data-portability-unitarias.md) |
 | CU-U-DO-01 | Unitaria | Documents | Carga documental válida persiste metadata y archivo privado | 1 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
 | CU-U-DO-02 | Unitaria | Documents | Carga documental rechaza archivo inválido | 2 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
-| CU-U-DO-03 | Unitaria | Documents | Carga documental valida práctica, tipo, propietario y estado | 6 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
+| CU-U-DO-03 | Unitaria | Documents | Carga documental valida práctica, tipo, propietario y estado | 7 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
 | CU-U-DO-04 | Unitaria | Documents | Secretaría solo carga documentos administrativos no sensibles | 3 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
 | CU-U-DO-05 | Unitaria | Documents | Listado y descarga respetan permisos y sensibilidad | 7 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
 | CU-U-DO-06 | Unitaria | Documents | Descarga rechaza archivos inexistentes o eliminados | 2 | [`modules/documents/documents-unitarias.md`](modules/documents/documents-unitarias.md) |
@@ -130,7 +134,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-E2E-DO-01 | End-to-end | Documents | Estudiante carga documento y rol documental lo aprueba | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
 | CU-E2E-DO-02 | End-to-end | Documents | Documento observado se corrige con nueva versión aprobada | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
 | CU-E2E-DO-03 | End-to-end | Documents | Exportación de expediente para DIRAE de práctica finalizada con documentos completos | Pendiente | [`modules/documents/documents-end-to-end.md`](modules/documents/documents-end-to-end.md) |
-| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 1 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-01 | Unitaria | Internships | Bloquear aprobación final fuera de periodo regular sin seguro ni excepción | 2 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-02 | Unitaria | Internships | Exigir validación explícita de seguro por solicitud fuera de periodo regular | 2 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-03 | Unitaria | Internships | Permitir avance a revisión fuera de periodo regular sin seguro | 1 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-04 | Unitaria | Internships | Bloquear Práctica I si el estudiante no aprobó la inducción | 1 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
@@ -145,14 +149,19 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-IN-13 | Unitaria | Internships | Validar excepciones administrativas | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-14 | Unitaria | Internships | Elegibilidad de registro informa bloqueos sin impedir creación | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-15 | Unitaria | Internships | Aprobación sincroniza requisito académico | 2 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
-| CU-U-IN-16 | Unitaria | Internships | Creación calcula seguro escolar desde requisito institucional | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-16 | Unitaria | Internships | Creación calcula seguro escolar desde requisito institucional | 5 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-17 | Unitaria | Internships | Dashboard normaliza estados y calcula estadísticas | 3 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-18 | Unitaria | Internships | Edición administrativa exige motivo, rol y campos válidos | 6 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-19 | Unitaria | Internships | Anulación lógica conserva trazabilidad | 3 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
-| CU-U-IN-20 | Unitaria | Internships | Contrato de creación de práctica valida payload | 9 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-20 | Unitaria | Internships | Contrato de creación de práctica valida payload | 12 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-21 | Unitaria | Internships | Contrato de excepción valida regla y motivo | 7 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
-| CU-U-IN-22 | Unitaria | Internships | Permisos de lectura permiten propietario o rol privilegiado | 5 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-22 | Unitaria | Internships | Permisos de lectura permiten propietario o rol privilegiado | 3 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-U-IN-23 | Unitaria | Internships | Contrato ORM mantiene columnas y enums críticos | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-24 | Unitaria | Internships | Inducción publicada y cuestionario mantienen contrato para estudiantes | 8 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-25 | Unitaria | Internships | Administración de inducción restringe roles, payload y publicación | 10 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-26 | Unitaria | Internships | Acciones administrativas validan permisos, estados y expediente DIRAE | 18 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-27 | Unitaria | Internships | Estudiante edita, anula o registra prácticas con ventana y duplicidad controladas | 12 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
+| CU-U-IN-28 | Unitaria | Internships | Transición de estado de bajo nivel conserva historial y matriz válida | 4 | [`modules/internships/internships-unitarias.md`](modules/internships/internships-unitarias.md) |
 | CU-I-IN-01 | Integración | Internships | Tracking permite propietario y roles privilegiados | 4 | [`modules/internships/internships-integracion.md`](modules/internships/internships-integracion.md) |
 | CU-I-IN-02 | Integración | Internships | Dashboard rechaza rol estudiante | 1 | [`modules/internships/internships-integracion.md`](modules/internships/internships-integracion.md) |
 | CU-E2E-IN-01 | End-to-end | Internships | Flujo completo de Práctica I aprobada | Pendiente | [`modules/internships/internships-end-to-end.md`](modules/internships/internships-end-to-end.md) |
@@ -183,14 +192,20 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-SC-01 | Unitaria | Scheduling | Administración publica y mantiene disponibilidad futura | 5 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
 | CU-U-SC-02 | Unitaria | Scheduling | Reserva de cita valida práctica y duplicados | 3 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
 | CU-U-SC-03 | Unitaria | Scheduling | Cancelación y reprogramación respetan actor y tipo de cita | 4 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
-| CU-U-SC-04 | Unitaria | Scheduling | Resultado de cita actualiza avance y cierre de práctica | 3 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-04 | Unitaria | Scheduling | Resultado de cita actualiza avance y cierre de práctica | 4 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-05 | Unitaria | Scheduling | Solicitudes de agenda validan configuración, propósito y duplicidad | 7 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-06 | Unitaria | Scheduling | Administración responde solicitudes respetando permisos y solapamientos | 7 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-07 | Unitaria | Scheduling | Configuración de agenda expone opciones correctas por actor | 5 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-08 | Unitaria | Scheduling | Agendamiento directo administrativo respeta rol y estado de práctica | 3 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-09 | Unitaria | Scheduling | Confirmación y documentación de cita respetan propietario | 3 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
+| CU-U-SC-10 | Unitaria | Scheduling | Notificaciones de agenda son efecto secundario opcional | 1 | [`modules/scheduling/scheduling-unitarias.md`](modules/scheduling/scheduling-unitarias.md) |
 | CU-U-SE-01 | Unitaria | Self evaluations | Formulario se habilita según últimos días hábiles y estado de práctica | 3 | [`modules/self-evaluations/self-evaluations-unitarias.md`](modules/self-evaluations/self-evaluations-unitarias.md) |
 | CU-U-SE-02 | Unitaria | Self evaluations | Estudiante guarda borrador y envío queda bloqueado | 3 | [`modules/self-evaluations/self-evaluations-unitarias.md`](modules/self-evaluations/self-evaluations-unitarias.md) |
 | CU-U-SE-03 | Unitaria | Self evaluations | Reapertura administrativa conserva trazabilidad | 1 | [`modules/self-evaluations/self-evaluations-unitarias.md`](modules/self-evaluations/self-evaluations-unitarias.md) |
 | CU-U-SV-01 | Unitaria | Supervisor evaluations | Invitación de supervisor exige práctica aprobada y autoevaluación enviada | 3 | [`modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations/supervisor-evaluations-unitarias.md) |
 | CU-U-SV-02 | Unitaria | Supervisor evaluations | Formulario público expone datos mínimos y valida vigencia | 3 | [`modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations/supervisor-evaluations-unitarias.md) |
 | CU-U-SV-03 | Unitaria | Supervisor evaluations | Envío público consume token e impide reutilización | 1 | [`modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations/supervisor-evaluations-unitarias.md) |
-| CU-U-SV-04 | Unitaria | Supervisor evaluations | Lectura de evaluaciones y asignaciones respeta permisos | 2 | [`modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations/supervisor-evaluations-unitarias.md) |
+| CU-U-SV-04 | Unitaria | Supervisor evaluations | Lectura de evaluaciones y asignaciones respeta permisos | 3 | [`modules/supervisor-evaluations/supervisor-evaluations-unitarias.md`](modules/supervisor-evaluations/supervisor-evaluations-unitarias.md) |
 
 ## Archivos
 

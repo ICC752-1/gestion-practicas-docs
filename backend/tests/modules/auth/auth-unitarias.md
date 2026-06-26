@@ -203,6 +203,7 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_true_for_active_unexpired_token`
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_false_for_revoked_token`
   - `tests/modules/auth/test_refresh_token_repository.py::test_is_refresh_token_valid_returns_false_for_expired_token`
+  - `tests/modules/auth/test_refresh_token_repository.py::test_revoke_active_tokens_for_user_revokes_matching_tokens`
 
 ### CU-U-AU-11: PasswordService hashea y valida contraseñas
 
@@ -234,8 +235,11 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - RUT inválido se rechaza.
   - Teléfono válido se normaliza a formato esperado.
   - Teléfono inválido se rechaza.
+  - Año de ingreso inválido se rechaza.
+  - Password ausente se acepta para activación posterior.
   - `UserCreateRequest` y `UserUpdateRequest` normalizan campos.
   - `UserService` persiste campos normalizados.
+  - `UserService` genera password interno cuando no se envía password inicial.
 - **Resultado esperado:** Los datos quedan en formato consistente o se rechazan si son inválidos.
 - **Valor de negocio:** Evita duplicados, inconsistencias y errores de contacto.
 - **Pruebas automatizadas:**
@@ -246,7 +250,10 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/auth/test_user_schema.py::test_user_create_request_normalizes_rut_and_phone`
   - `tests/modules/auth/test_user_schema.py::test_user_update_request_normalizes_rut_and_phone`
   - `tests/modules/auth/test_user_schema.py::test_user_create_request_rejects_invalid_fields`
+  - `tests/modules/auth/test_user_schema.py::test_user_create_request_accepts_missing_password`
+  - `tests/modules/auth/test_user_schema.py::test_user_create_request_rejects_invalid_admission_year`
   - `tests/modules/auth/test_user_service.py::test_create_user_normalizes_rut_and_phones`
+  - `tests/modules/auth/test_user_service.py::test_create_user_generates_internal_password_when_missing`
   - `tests/modules/auth/test_user_service.py::test_update_user_normalizes_fields`
 
 ### CU-U-AU-13: Dependencia de roles permite o rechaza según autorización
@@ -333,3 +340,96 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - **Pruebas automatizadas:**
   - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_rejects_unauthorized_domain`
   - `tests/modules/auth/test_google_oauth_service.py::test_exchange_authorization_code_rejects_invalid_code`
+
+### CU-U-AU-18: Password temporal y activación de cuenta protegen el primer acceso
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Auth
+- **Contexto:** Usuarios creados por administración pueden requerir cambio de password o activación por enlace antes de usar sesión normal.
+- **Objetivo:** Validar bloqueo de sesiones normales con password temporal y consumo seguro del token de activación.
+- **Escenario:** Se intenta iniciar sesión con password temporal, completar cambio de password y activar cuenta mediante token válido o inválido.
+- **Variantes cubiertas:**
+  - Login con password temporal requiere completar cambio antes de emitir sesión.
+  - Completar password temporal reemplaza hash y limpia flag.
+  - Completar password temporal se rechaza si la cuenta no tiene cambio pendiente.
+  - Activación válida setea password y consume token.
+  - Consulta de información de activación retorna datos del estudiante.
+  - Token de activación ausente o expirado se rechaza.
+- **Resultado esperado:** El primer acceso queda forzado por flujo controlado y los tokens de activación no se reutilizan indebidamente.
+- **Valor de negocio:** Protege cuentas recién creadas y evita acceso completo antes de completar credenciales propias.
+- **Pruebas automatizadas:**
+  - `tests/modules/auth/test_auth_service.py::test_login_requires_temporary_password_change_before_session`
+  - `tests/modules/auth/test_auth_service.py::test_complete_temporary_password_replaces_hash_and_clears_flag`
+  - `tests/modules/auth/test_auth_service.py::test_complete_temporary_password_rejects_accounts_without_pending_change`
+  - `tests/modules/auth/test_auth_service.py::test_activate_account_sets_password_and_consumes_token`
+  - `tests/modules/auth/test_auth_service.py::test_get_activation_account_info_returns_student_data`
+  - `tests/modules/auth/test_auth_service.py::test_activate_account_rejects_missing_token`
+  - `tests/modules/auth/test_auth_service.py::test_activate_account_rejects_expired_token`
+
+### CU-U-AU-19: Administración de usuarios queda restringida a Superadmin
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Auth
+- **Contexto:** La administración de usuarios y roles es una operación de alto privilegio.
+- **Objetivo:** Validar que solo `Superadmin` puede administrar usuarios y que no se elimina el último acceso administrativo.
+- **Escenario:** Roles no superadmin intentan administrar usuarios y se evalúan remociones de acceso superadmin.
+- **Variantes cubiertas:**
+  - Política de roles de administración contiene solo `Superadmin`.
+  - Roles no superadmin reciben `403`.
+  - Superadmin sí pasa la política.
+  - Superadmin no puede remover su propio acceso.
+  - No se puede remover el último superadmin activo.
+  - Se permite remover acceso si queda otro superadmin activo.
+- **Resultado esperado:** El control de usuarios conserva al menos un administrador activo y bloquea roles no autorizados.
+- **Valor de negocio:** Evita escalamiento indebido y pérdida de administración del sistema.
+- **Pruebas automatizadas:**
+  - `tests/modules/auth/test_rbac_roles.py::test_user_admin_policy_is_superadmin_only`
+  - `tests/modules/auth/test_user_controller.py::test_user_admin_policy_rejects_non_superadmin_roles`
+  - `tests/modules/auth/test_user_controller.py::test_user_admin_policy_allows_superadmin`
+  - `tests/modules/auth/test_user_controller.py::test_superadmin_cannot_remove_own_admin_access`
+  - `tests/modules/auth/test_user_controller.py::test_cannot_remove_last_active_superadmin`
+  - `tests/modules/auth/test_user_controller.py::test_can_remove_superadmin_access_when_another_active_admin_remains`
+
+### CU-U-AU-20: Seed demo conserva contratos seguros para QA local
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Auth
+- **Contexto:** El seed demo crea usuarios y datos base para pruebas manuales locales sin habilitarse en producción.
+- **Objetivo:** Validar precondiciones de ejecución y coherencia de datos demo institucionales.
+- **Escenario:** Se valida password, ambiente, dominios, inducción y requisitos académicos del seed demo.
+- **Variantes cubiertas:**
+  - Password demo obligatorio y con longitud mínima.
+  - Ambiente productivo bloquea ejecución.
+  - Ambiente local permite ejecución.
+  - Emails de estudiantes usan dominio institucional.
+  - Inducción usa claves de respuesta estables y una versión activa nombrada.
+  - Requisitos académicos demo quedan coherentes.
+  - Escenarios no cubiertos quedan declarados explícitamente.
+- **Resultado esperado:** El seed demo es seguro para QA local y no habilita datos inseguros por accidente.
+- **Valor de negocio:** Reduce errores manuales de QA sin introducir riesgo operacional.
+- **Pruebas automatizadas:**
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_requires_password`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_rejects_short_password`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_rejects_production_environment`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_allows_local_environment`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_student_emails_use_institutional_domain`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_induction_uses_stable_answer_keys`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_uses_single_named_active_induction`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_sets_coherent_academic_requirements`
+  - `tests/modules/auth/test_seed_demo.py::test_seed_demo_declares_only_current_uncovered_edges`
+
+### CU-U-AU-21: Notificación de activación no bloquea creación de usuario
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Auth / Notifications
+- **Contexto:** La activación por enlace requiere enviar correo, pero la mensajería es un efecto secundario.
+- **Objetivo:** Validar el contrato del correo de activación y que fallos de notificación no rompen el flujo principal.
+- **Escenario:** Se construye notificación de activación y luego se simula fallo no bloqueante.
+- **Variantes cubiertas:**
+  - Email de activación conserva destinatario, asunto y enlace.
+  - Error al despachar notificación no propaga fallo al flujo principal.
+- **Resultado esperado:** La activación queda comunicada cuando es posible y tolera degradación de mensajería.
+- **Valor de negocio:** Evita que problemas de correo impidan administrar cuentas.
+- **Pruebas automatizadas:**
+  - `tests/modules/auth/test_user_activation_notification.py::test_dispatch_account_activation_notification_builds_email`
+  - `tests/modules/auth/test_user_activation_notification.py::test_dispatch_account_activation_notification_is_non_blocking`
