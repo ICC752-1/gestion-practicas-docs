@@ -307,23 +307,23 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - **Pruebas automatizadas:**
   - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_issues_app_tokens_for_existing_user`
 
-### CU-U-AU-16: Google OAuth crea estudiante para dominio permitido
+### CU-U-AU-16: Google OAuth exige usuario local habilitado
 
 - **Tipo de prueba:** Unitaria
 - **Dominio:** Auth
-- **Contexto:** Estudiantes institucionales pueden aprovisionarse automáticamente desde Google si pertenecen a un dominio permitido.
-- **Objetivo:** Validar creación de usuario estudiante, hash de password sintético, RUT sintético y asignación de rol.
-- **Escenario:** Google retorna identidad verificada de un email permitido que no existe localmente.
+- **Contexto:** El login federado autentica identidades institucionales, pero la cuenta debe existir y estar habilitada localmente.
+- **Objetivo:** Validar que OAuth no autoregistra usuarios y respeta el estado local de activación.
+- **Escenario:** Google retorna identidad verificada para usuario inexistente, inactivo o pendiente de activación.
 - **Variantes cubiertas:**
-  - Se crea usuario activo y verificado.
-  - Se genera password hash no conocido por el usuario.
-  - Se genera RUT sintético `google:*`.
-  - Se asigna rol `Estudiante`.
-  - Se emiten tokens internos.
-- **Resultado esperado:** El usuario nuevo queda creado como estudiante y recibe sesión interna.
-- **Valor de negocio:** Reduce fricción de ingreso para cuentas institucionales permitidas.
+  - Usuario local inexistente se rechaza sin crear cuenta.
+  - Usuario local inactivo se rechaza.
+  - Usuario pendiente de activación se rechaza.
+- **Resultado esperado:** El service lanza `GoogleOAuthError` con código controlado y no crea usuarios implícitamente.
+- **Valor de negocio:** Evita altas no autorizadas por OAuth y mantiene el control administrativo de cuentas.
 - **Pruebas automatizadas:**
-  - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_creates_student_for_allowed_domain`
+  - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_rejects_missing_local_user`
+  - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_rejects_inactive_local_user`
+  - `tests/modules/auth/test_google_oauth_service.py::test_authenticate_callback_rejects_pending_activation`
 
 ### CU-U-AU-17: Google OAuth rechaza dominio o código inválido
 
@@ -433,3 +433,22 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
 - **Pruebas automatizadas:**
   - `tests/modules/auth/test_user_activation_notification.py::test_dispatch_account_activation_notification_builds_email`
   - `tests/modules/auth/test_user_activation_notification.py::test_dispatch_account_activation_notification_is_non_blocking`
+
+### CU-U-AU-22: Gestión acotada de cuentas estudiante queda limitada a roles académicos
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Auth
+- **Contexto:** Dirección de carrera y encargados de práctica pueden gestionar cuentas de estudiantes sin acceder a administración general de usuarios.
+- **Objetivo:** Validar que la política académica solo permite operar cuentas exclusivamente estudiantiles.
+- **Escenario:** Se evalúan roles habilitados para gestión estudiantil y el alcance permitido sobre cuentas objetivo.
+- **Variantes cubiertas:**
+  - Política de gestores estudiantiles incluye encargado de práctica y dirección de carrera.
+  - Superadmin y estudiante no pertenecen a esa política acotada.
+  - Cuenta con solo rol `Estudiante` queda dentro del alcance permitido.
+  - Cuenta con roles no estudiantiles o mixtos queda fuera del alcance.
+- **Resultado esperado:** Los roles académicos pueden operar solo cuentas estudiantiles puras y no cuentas administrativas.
+- **Valor de negocio:** Permite operación académica de estudiantes sin ampliar privilegios de administración global.
+- **Pruebas automatizadas:**
+  - `tests/modules/auth/test_rbac_roles.py::test_student_account_manager_policy_is_academic_only`
+  - `tests/modules/auth/test_user_controller.py::test_student_scope_allows_student_only_account`
+  - `tests/modules/auth/test_user_controller.py::test_student_scope_rejects_non_student_only_accounts`

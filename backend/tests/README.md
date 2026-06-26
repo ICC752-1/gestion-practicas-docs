@@ -46,18 +46,18 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Admin | 9 | 20 | 3 | 7 | 0 | 0 | 0 |
-| Auth | 21 | 80 | 7 | 16 | 1 | 1 | 0 |
+| Auth | 22 | 85 | 7 | 16 | 1 | 1 | 0 |
 | Data portability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | Documents | 13 | 54 | 5 | 8 | 1 | 1 | 0 |
-| Internships | 28 | 133 | 2 | 5 | 2 | 2 | 0 |
-| Notifications | 9 | 18 | 5 | 8 | 1 | 1 | 0 |
+| Internships | 28 | 135 | 2 | 5 | 2 | 2 | 0 |
+| Notifications | 10 | 22 | 5 | 8 | 1 | 1 | 0 |
 | Presentation letters | 6 | 9 | 0 | 0 | 0 | 0 | 0 |
 | Scheduling | 10 | 42 | 0 | 0 | 0 | 0 | 0 |
 | Self evaluations | 3 | 7 | 0 | 0 | 0 | 0 | 0 |
 | Supervisor evaluations | 4 | 10 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **105** | **375** | **22** | **44** | **5** | **5** | **0** |
+| **Total** | **107** | **386** | **22** | **44** | **5** | **5** | **0** |
 
-En total hay 132 casos documentados y 424 referencias a tests automatizados de módulos funcionales. Los 5 casos end-to-end están implementados y sustituyen los flujos E2E extensos anteriores por una suite acotada de mayor valor.
+En total hay 134 casos documentados y 435 referencias a tests automatizados de módulos funcionales. Los 5 casos end-to-end están implementados y sustituyen los flujos E2E extensos anteriores por una suite acotada de mayor valor.
 
 ## Índice de casos de prueba
 
@@ -92,12 +92,13 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-AU-13 | Unitaria | Auth | Dependencia de roles permite o rechaza según autorización | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-14 | Unitaria | Auth | Google OAuth construye URL y valida callback | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-15 | Unitaria | Auth | Google OAuth emite sesión para usuario existente | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
-| CU-U-AU-16 | Unitaria | Auth | Google OAuth crea estudiante para dominio permitido | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-16 | Unitaria | Auth | Google OAuth exige usuario local habilitado | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-17 | Unitaria | Auth | Google OAuth rechaza dominio o código inválido | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-18 | Unitaria | Auth | Password temporal y activación de cuenta protegen el primer acceso | 7 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-19 | Unitaria | Auth | Administración de usuarios queda restringida a Superadmin | 6 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-20 | Unitaria | Auth | Seed demo conserva contratos seguros para QA local | 9 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-21 | Unitaria | Auth | Notificación de activación no bloquea creación de usuario | 2 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
+| CU-U-AU-22 | Unitaria | Auth | Gestión acotada de cuentas estudiante queda limitada a roles académicos | 3 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-I-AU-01 | Integración | Auth | `get_current_user` rechaza refresh token como Bearer | 1 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-02 | Integración | Auth | Controller de login expone contrato de sesión | 3 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
 | CU-I-AU-03 | Integración | Auth | Controller de refresh renueva sesión desde body o cookie | 3 | [`modules/auth/auth-integracion.md`](modules/auth/auth-integracion.md) |
@@ -163,11 +164,12 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-U-NO-02 | Unitaria | Notifications | Enviar notificaciones reales y registrar resultado de entrega | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-03 | Unitaria | Notifications | Evitar envío real cuando la configuración SMTP no está lista | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-04 | Unitaria | Notifications | Rechazar envío SMTP persistente sin destinatario de correo | 1 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
-| CU-U-NO-05 | Unitaria | Notifications | Helpers de eventos conservan contrato de ruteo y payload | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
+| CU-U-NO-05 | Unitaria | Notifications | Helpers de eventos conservan contrato de ruteo y payload | 4 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-06 | Unitaria | Notifications | Contenido HTML omite datos vacíos y escapa valores dinámicos | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-07 | Unitaria | Notifications | Productores toleran notificaciones como efecto secundario opcional | 1 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-08 | Unitaria | Notifications | Reintento respeta configuración y estados elegibles | 3 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-U-NO-09 | Unitaria | Notifications | Reintento actualiza estado según resultado SMTP | 3 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
+| CU-U-NO-10 | Unitaria | Notifications | Plantillas HTML compartidas conservan contrato de evaluaciones | 2 | [`modules/notifications/notifications-unitarias.md`](modules/notifications/notifications-unitarias.md) |
 | CU-I-NO-01 | Integración | Notifications | Usuario autenticado lista su bandeja de notificaciones | 1 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |
 | CU-I-NO-02 | Integración | Notifications | Usuario solo consulta detalle de notificaciones propias | 3 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |
 | CU-I-NO-03 | Integración | Notifications | Controller de reintento traduce resultado operacional | 2 | [`modules/notifications/notifications-integracion.md`](modules/notifications/notifications-integracion.md) |

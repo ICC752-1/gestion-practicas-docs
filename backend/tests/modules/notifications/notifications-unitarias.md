@@ -82,11 +82,15 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - Rechazo conserva motivo.
   - Derivación conserva motivo.
   - Cambio de requisito conserva identificador, tipo y estados.
+  - Derivación mantiene asunto y contenido esperados.
+  - Cambio de requisito mantiene `event_type`, asunto y contenido esperados.
 - **Resultado esperado:** Las notificaciones mantienen contratos estables de ruteo y payload.
 - **Valor de negocio:** Evita romper consumidores internos que interpretan notificaciones por tipo y metadata.
 - **Pruebas automatizadas:**
   - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_internship_event_helpers_keep_routing_and_payload_contract`
   - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_requirement_status_changed_notification_keeps_payload_contract`
+  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_derived_notification_builds_correctly`
+  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_requirement_status_changed_notification`
 
 ### CU-U-NO-06: Contenido HTML omite datos vacíos y escapa valores dinámicos
 
@@ -153,3 +157,20 @@ Los casos agrupan variantes automatizadas relacionadas. No representan una prueb
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_successful_for_failed_notification`
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_successful_for_pending_notification`
   - `tests/modules/notifications/test_notification_service.py::TestRetrySend::test_retry_smtp_failure_keeps_notification_failed`
+
+### CU-U-NO-10: Plantillas HTML compartidas conservan contrato de evaluaciones
+
+- **Tipo de prueba:** Unitaria
+- **Dominio:** Notifications / Evaluations
+- **Contexto:** Las evaluaciones de estudiante y supervisor usan correos transaccionales HTML compartidos.
+- **Objetivo:** Validar que las notificaciones de evaluación mantienen estructura HTML, asunto, destinatario y payload funcional.
+- **Escenario:** Se construye una invitación de evaluación de supervisor y notificaciones de autoevaluación enviada.
+- **Variantes cubiertas:**
+  - Invitación de supervisor usa cuerpo HTML compartido, URL pública y payload de evento.
+  - Notificación al estudiante por autoevaluación enviada usa plantilla HTML.
+  - Notificación administrativa por autoevaluación enviada usa plantilla HTML.
+- **Resultado esperado:** Los correos de evaluación conservan contenido renderizable y metadata útil para trazabilidad.
+- **Valor de negocio:** Evita regresiones visuales o contractuales en comunicaciones críticas de cierre de práctica.
+- **Pruebas automatizadas:**
+  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_supervisor_evaluation_invitation_uses_shared_html_body`
+  - `tests/modules/notifications/test_notification_service.py::TestPayloadStorage::test_self_evaluation_notifications_use_shared_html_body`
