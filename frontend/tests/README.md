@@ -2,12 +2,13 @@
 
 ## Objetivo
 
-Este documento define un conjunto minimo de pruebas frontend para proteger el
+Este documento resume una capa base de pruebas frontend para proteger el
 comportamiento transversal mas importante sin convertir la suite en pruebas
 fragiles de estilos o detalles visuales.
 
-El foco inicial es cubrir navegacion por rol, proteccion de rutas, manejo de
-sesion y el flujo principal de inscripcion de practica.
+El foco actual es cubrir navegacion por rol, proteccion de rutas, manejo de
+sesion y el flujo principal de inscripcion de practica, sin pretender describir
+toda la suite existente del repositorio.
 
 ## Criterios de valor
 
@@ -22,7 +23,7 @@ Una prueba frontend debe existir si protege al menos uno de estos puntos:
 Se deben evitar snapshots, pruebas de clases CSS, textos decorativos o asserts
 que dependan de layout salvo que afecten directamente el flujo funcional.
 
-## Resumen de cobertura propuesta
+## Resumen de cobertura base documentada
 
 | Area | Tipo | Casos | Archivo objetivo |
 | --- | --- | ---: | --- |
@@ -54,8 +55,8 @@ que dependan de layout salvo que afecten directamente el flujo funcional.
 
 ## Alcance inicial de automatizacion
 
-Estas pruebas deben implementarse con una configuracion minima de `Vitest`,
-`React Testing Library` y `jsdom` cuando se agregue soporte de test al frontend.
+Estas pruebas se implementan actualmente con `Vitest`, `React Testing Library`
+y `jsdom` como base de la suite frontend.
 
 La suite inicial no debe cubrir:
 

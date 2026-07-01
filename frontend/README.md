@@ -17,8 +17,8 @@
 
 ## Pruebas
 
-- [`tests/README.md`](tests/README.md): casos minimos propuestos para pruebas
-  frontend de rutas, sesion, cliente API e inscripcion.
+- [`tests/README.md`](tests/README.md): cobertura base documentada de rutas,
+  sesion, cliente API e inscripcion, con criterio para ampliar la suite.
 
 > [!NOTE]
 > La documentacion frontend describe el comportamiento real de la implementacion

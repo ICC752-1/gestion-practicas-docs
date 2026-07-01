@@ -24,12 +24,14 @@ El frontend gestiona la sesion de usuario mediante `AuthContext`, `authService`,
 **Permite:**
 
 - Iniciar sesion con email y password.
+- Completar activacion de cuenta y cambio de contraseña temporal.
 - Redirigir al flujo OAuth de Google expuesto por el backend.
 - Procesar el callback OAuth del backend.
 - Restaurar sesion al recargar la aplicacion.
 - Obtener el usuario autenticado desde `/auth/me`.
-- Mantener access token y refresh token en `localStorage`.
+- Mantener access token y, cuando exista, refresh token en `localStorage`.
 - Renovar tokens automaticamente desde interceptores Axios.
+- Usar cookies de refresh en requests con `withCredentials`.
 - Cerrar sesion local y remotamente.
 - Restringir vistas segun roles del usuario autenticado.
 
@@ -46,6 +48,7 @@ llamar endpoints protegidos y aplicar restricciones visuales por rol.
 - Limpiar sesion local cuando el token deja de ser valido.
 - Anadir `Authorization: Bearer <token>` a peticiones protegidas.
 - Renovar tokens antes de su expiracion o tras respuestas `401`.
+- Enviar requests de refresh y logout con `withCredentials`.
 - Redirigir usuarios no autenticados a `/login`.
 - Mostrar denegacion visual cuando el usuario no tiene un rol permitido.
 
@@ -54,7 +57,6 @@ llamar endpoints protegidos y aplicar restricciones visuales por rol.
 - Validar credenciales directamente.
 - Emitir, firmar o verificar criptograficamente tokens.
 - Decidir permisos reales de negocio.
-- Persistir refresh tokens de forma segura fuera del navegador.
 - Sustituir la autorizacion del backend.
 - Definir el contrato formal de autenticacion.
 
@@ -70,11 +72,12 @@ llamar endpoints protegidos y aplicar restricciones visuales por rol.
 | `src/context/AuthContext.jsx` | Mantiene usuario, token, estado de carga, errores y operaciones de sesion. |
 | `src/context/auth-context.js` | Define el contexto React de autenticacion. |
 | `src/context/useAuth.js` | Expone el hook consumidor de autenticacion. |
-| `src/services/authService.js` | Encapsula login, logout, `/auth/me` y URL OAuth. |
+| `src/services/authService.js` | Encapsula login, logout, activacion, password temporal, `/auth/me` y URL OAuth. |
 | `src/services/api.js` | Anade token, renueva sesion y maneja `401` desde Axios. |
 | `src/components/PrivateRoute.jsx` | Protege rutas segun sesion y roles permitidos. |
 | `src/routes/AppRoutes.jsx` | Declara rutas publicas, protegidas y roles permitidos. |
 | `src/pages/Auth/AuthCallbackPage.jsx` | Procesa el retorno del flujo OAuth. |
+| `src/pages/Auth/ActivateAccountPage.jsx` | Completa el primer acceso mediante token de activacion. |
 | `src/services/roleRouting.js` | Resuelve el destino local recomendado segun roles. |
 | `src/services/oauthErrors.js` | Traduce codigos de error OAuth a mensajes de interfaz. |
 
@@ -94,8 +97,9 @@ llamar endpoints protegidos y aplicar restricciones visuales por rol.
 9. La navegacion posterior depende de los roles del usuario.
 
 Si el backend responde `401`, el contexto define el error visible como
-`Credenciales invalidas`. Si no hay respuesta HTTP, se muestra `Servidor no
-disponible`.
+`Credenciales inválidas`. Si no hay respuesta HTTP, se muestra `Servidor no
+disponible`. Si el backend exige reemplazar una clave temporal, expone el detalle
+`TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
 
 #### Restauracion de sesion
 
@@ -121,15 +125,15 @@ access token siga siendo valido o pueda renovarse desde el cliente Axios.
 7. Si hay error, lanza un error OAuth local.
 8. Si no hay error, exige el parametro `token`.
 9. Guarda el access token en `localStorage`.
-10. Llama a `/auth/me` para resolver usuario y roles.
-11. Si `/auth/me` falla, limpia sesion local y reporta callback invalido.
-12. Si el usuario se resuelve correctamente, guarda el usuario autenticado.
+10. Elimina cualquier `refresh_token` previo de `localStorage`.
+11. Llama a `/auth/me` para resolver usuario y roles.
+12. Si `/auth/me` falla, limpia sesion local y reporta callback invalido.
+13. Si el usuario se resuelve correctamente, guarda el usuario autenticado.
 
 > [!WARNING]
-> En el flujo OAuth actual el callback frontend guarda el access token recibido
-> en query string. El refresh token no se guarda explicitamente desde este flujo
-> en `AuthContext`; la continuidad de sesion depende del comportamiento del
-> backend y del cliente HTTP.
+> En el flujo OAuth actual el callback frontend guarda solo el access token que
+> llega en query string. La continuidad de sesion posterior depende del refresh
+> manejado por cookie HTTP-only y del cliente Axios con `withCredentials`.
 
 #### Renovacion automatica de tokens
 
@@ -140,10 +144,11 @@ La renovacion automatica esta centralizada en `src/services/api.js`.
    del JWT.
 3. Si el access token expira en 30 segundos o menos, llama a
    `refreshAccessToken`.
-4. `refreshAccessToken` lee `refresh_token` desde `localStorage`.
-5. Ejecuta `POST /auth/refresh` con `{ "refresh_token": "<token>" }`.
-6. Si la respuesta es valida, reemplaza `token` y `refresh_token` en
+4. `refreshAccessToken` arma un payload con `refresh_token` solo si existe en
    `localStorage`.
+5. Ejecuta `POST /auth/refresh` con `withCredentials: true`.
+6. Si la respuesta es valida, reemplaza `token` y actualiza `refresh_token` solo
+   cuando ya existia uno local y el backend retorno uno nuevo.
 7. La peticion original continua con el nuevo `Authorization`.
 
 Para evitar renovaciones concurrentes, `api.js` reutiliza una promesa global
@@ -164,11 +169,10 @@ Para evitar renovaciones concurrentes, `api.js` reutiliza una promesa global
 1. La interfaz llama a `AuthContext.logout`.
 2. `AuthContext.logout` delega en `authService.logout`.
 3. `authService.logout` lee `refresh_token` desde `localStorage`.
-4. Si existe refresh token, intenta llamar a `POST /auth/logout`.
-5. Si el backend falla, el cierre local continua igualmente.
+4. Si existe refresh token, lo envia en `POST /auth/logout`.
+5. Aunque el backend falle, el cierre local continua igualmente.
 6. El servicio elimina `token` y `refresh_token`.
-7. `AuthContext` limpia `user` y `token`.
-8. El navegador redirige a `/landing`.
+7. `AuthContext` redirige a `/landing`.
 
 ## Tokens y sesion local
 
@@ -177,7 +181,7 @@ El frontend usa las siguientes claves de `localStorage`:
 | Clave | Uso |
 | --- | --- |
 | `token` | Access token JWT usado en `Authorization`. |
-| `refresh_token` | Refresh token usado para renovar sesion. |
+| `refresh_token` | Refresh token usado como apoyo cuando existe localmente. |
 
 `src/services/api.js` decodifica localmente el payload del JWT solo para leer
 `exp` y decidir si conviene renovar el access token. Esta lectura no valida la
@@ -186,7 +190,6 @@ firma del token y no debe usarse como mecanismo de seguridad.
 La sesion se limpia cuando:
 
 - Falla la restauracion inicial con `/auth/me`.
-- No existe refresh token durante una renovacion necesaria.
 - `/auth/refresh` falla.
 - Una respuesta `401` no puede resolverse con refresh.
 - El usuario ejecuta logout.
@@ -198,12 +201,16 @@ El usuario autenticado se obtiene desde `/auth/me` y se guarda en `AuthContext`.
 `PrivateRoute` usa `user.roles` para comparar contra `allowedRoles` definidos en
 `AppRoutes.jsx`.
 
-Los grupos actuales son:
+Los grupos actuales relevantes son:
 
 | Grupo frontend | Roles |
 | --- | --- |
 | Estudiantes | `Estudiante` |
-| Administracion | `Encargado de practica`, `Director de carrera`, `Secretaria de Carrera` |
+| Decision administrativa | `Encargado de practica`, `Director de carrera` |
+| Secretaria | `Secretaria de Carrera` |
+| Reportes | `Encargado de practica`, `Director de carrera`, `FICA` |
+| FICA | `FICA` |
+| Superadmin | `Superadmin` |
 | Supervisores | `Supervisor de practica` |
 
 Cuando el usuario esta autenticado pero no tiene un rol permitido, `PrivateRoute`
@@ -218,6 +225,8 @@ muestra una pantalla de acceso denegado y ofrece navegar al panel resuelto por
 | Usuario actual | `GET /auth/me` |
 | Refresh token | `POST /auth/refresh` |
 | Logout | `POST /auth/logout` |
+| Activacion de cuenta | `GET /auth/activation-info`, `POST /auth/activate-account` |
+| Password temporal | `POST /auth/complete-temporary-password` |
 | Inicio OAuth Google | `GET /auth/google/login` |
 | Callback OAuth backend | Redireccion hacia `/auth/callback` en frontend |
 
@@ -231,13 +240,18 @@ menos:
 }
 ```
 
-El frontend espera que `/auth/me` retorne un usuario con arreglo de roles:
+El frontend espera que `/auth/me` retorne un usuario con arreglo de roles y
+campos academicos basicos:
 
 ```json
 {
   "id": 1,
   "email": "user@example.com",
-  "roles": ["Estudiante"]
+  "roles": ["Estudiante"],
+  "degree": "Ingeniería Civil Informática",
+  "cod_degree": "ICI",
+  "enrollment": "20241234567",
+  "admission_year": 2024
 }
 ```
 
@@ -252,5 +266,7 @@ El detalle formal de estos contratos pertenece al backend.
   backend.
 - Los endpoints protegidos deben seguir validando Bearer token y roles en
   backend.
+- El cliente usa `withCredentials`, por lo que la politica de cookies del backend
+  afecta la continuidad de sesion.
 - El logout local debe completarse aunque el backend no pueda revocar el refresh
   token.

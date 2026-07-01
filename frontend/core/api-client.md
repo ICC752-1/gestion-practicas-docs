@@ -19,13 +19,14 @@
 
 El frontend centraliza la comunicacion HTTP con el backend en
 `src/services/api.js`. Este archivo crea una instancia Axios compartida,
-configura la URL base desde `VITE_API_URL`, adjunta el access token a las
-peticiones y gestiona renovacion automatica de sesion.
+configura la URL base desde `VITE_API_URL`, usa `withCredentials`, adjunta el
+access token a las peticiones y gestiona renovacion automatica de sesion.
 
 **Permite:**
 
 - Reutilizar una unica instancia Axios para llamadas al backend.
 - Configurar la URL base de API mediante variable de entorno Vite.
+- Enviar cookies del backend mediante `withCredentials: true`.
 - Adjuntar `Authorization: Bearer <token>` cuando existe sesion local.
 - Renovar el access token antes de su expiracion.
 - Reintentar una peticion protegida despues de un `401` si el refresh funciona.
@@ -42,6 +43,7 @@ HTTP y delega los contratos concretos a servicios especializados.
 
 - Crear la instancia Axios compartida.
 - Leer `VITE_API_URL` como `baseURL`.
+- Configurar `withCredentials` para requests con cookie de refresh.
 - Leer tokens desde `localStorage`.
 - Adjuntar el access token a peticiones no excluidas.
 - Decodificar localmente `exp` del JWT para anticipar refresh.
@@ -71,8 +73,15 @@ HTTP y delega los contratos concretos a servicios especializados.
 | `src/services/authService.js` | Login, logout, usuario actual y URL OAuth. |
 | `src/services/internshipService.js` | Operaciones frontend sobre practicas. |
 | `src/services/coordinatorService.js` | Operaciones administrativas. |
+| `src/services/adminReportService.js` | Reportes institucionales y exportaciones. |
 | `src/services/documentService.js` | Operaciones documentales. |
 | `src/services/notificationService.js` | Consulta de notificaciones. |
+| `src/services/studentAccountService.js` | Gestion de cuentas estudiante. |
+| `src/services/inductionAdminService.js` | CRUD y publicacion de induccion. |
+| `src/services/auditService.js` | Consulta del panel de auditoria. |
+| `src/services/superadminService.js` | Usuarios y roles para Superadmin. |
+| `src/services/dataPortabilityService.js` | Portabilidad de datos del estudiante. |
+| `src/services/presentationLetterService.js` | Cartas de presentacion. |
 | `src/services/roleRouting.js` | Redireccion local segun roles. |
 | `src/services/oauthErrors.js` | Traduccion de errores OAuth para interfaz. |
 
@@ -83,6 +92,7 @@ La instancia compartida se crea en `src/services/api.js`:
 ```js
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
+    withCredentials: true,
 });
 ```
 
@@ -151,9 +161,10 @@ misma promesa en vez de disparar varios `POST /auth/refresh` simultaneos.
 El flujo es:
 
 1. Lee `refresh_token` desde `localStorage`.
-2. Si no existe, lanza `missing_refresh_token`.
-3. Si no hay refresh activo, ejecuta `POST /auth/refresh`.
-4. Guarda los nuevos `access_token` y `refresh_token`.
+2. Construye payload con `refresh_token` solo si existe localmente.
+3. Si no hay refresh activo, ejecuta `POST /auth/refresh` con `withCredentials`.
+4. Guarda el nuevo `access_token`.
+5. Solo actualiza `refresh_token` si ya habia uno local y el backend retorno uno nuevo.
 5. Devuelve el nuevo access token.
 6. Al finalizar, libera `refreshRequest`.
 
@@ -194,11 +205,18 @@ de carga, errores visibles y decisiones de interfaz.
 
 | Servicio | Endpoints principales |
 | --- | --- |
-| `authService.js` | `/auth/login`, `/auth/me`, `/auth/logout`, `/auth/google/login` |
+| `authService.js` | `/auth/login`, `/auth/me`, `/auth/logout`, activacion y password temporal, `/auth/google/login` |
 | `internshipService.js` | `/internships`, `/internships/me`, `/internships/{id}`, acciones de practica |
 | `coordinatorService.js` | `/admin/summary`, `/admin/internships`, acciones administrativas |
+| `adminReportService.js` | `/admin/reports/...` |
 | `documentService.js` | `/documents/types`, documentos por practica, descarga, revision y eliminacion |
 | `notificationService.js` | `/notifications`, `/notifications/{id}` |
+| `studentAccountService.js` | `/users/students` |
+| `inductionAdminService.js` | `/induction/admin/versions` |
+| `auditService.js` | `/audit/events` |
+| `superadminService.js` | `/users`, `/roles`, `/users/{id}/roles` |
+| `dataPortabilityService.js` | `/data-portability/...` |
+| `presentationLetterService.js` | `/presentation-letters/...` |
 
 #### Manejo de errores
 
@@ -216,7 +234,8 @@ El cliente espera que el backend acepte Bearer token en endpoints protegidos:
 Authorization: Bearer <access_token>
 ```
 
-Para renovacion, el cliente envia:
+Para renovacion, el cliente envia request con cookies habilitadas y, cuando el
+refresh token existe localmente, tambien puede incluir:
 
 ```json
 {
@@ -244,6 +263,7 @@ El detalle formal de contratos HTTP pertenece al backend.
 ## Limites actuales
 
 - El cliente depende de `localStorage` para leer access token y refresh token.
+- La continuidad de sesion tambien depende de cookies enviadas con `withCredentials`.
 - El refresh preventivo depende de que el access token sea un JWT decodificable
   con campo `exp`.
 - No existe normalizacion global de errores de negocio.

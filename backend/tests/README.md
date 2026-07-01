@@ -46,6 +46,7 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Módulo | Casos unitarios | Tests unitarios | Casos integración | Tests integración | Casos E2E | Tests E2E | E2E pendientes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Admin | 9 | 20 | 3 | 7 | 0 | 0 | 0 |
+| Audit | 2 | 5 | 0 | 0 | 0 | 0 | 0 |
 | Auth | 22 | 85 | 7 | 16 | 1 | 1 | 0 |
 | Data portability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | Documents | 13 | 54 | 5 | 8 | 1 | 1 | 0 |
@@ -55,9 +56,9 @@ Una prueba debería evitarse, consolidarse o reemplazarse si solo verifica detal
 | Scheduling | 10 | 42 | 0 | 0 | 0 | 0 | 0 |
 | Self evaluations | 3 | 7 | 0 | 0 | 0 | 0 | 0 |
 | Supervisor evaluations | 4 | 10 | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **107** | **386** | **22** | **44** | **5** | **5** | **0** |
+| **Total** | **109** | **391** | **22** | **44** | **5** | **5** | **0** |
 
-En total hay 134 casos documentados y 435 referencias a tests automatizados de módulos funcionales. Los 5 casos end-to-end están implementados y sustituyen los flujos E2E extensos anteriores por una suite acotada de mayor valor.
+En total hay 136 casos documentados y 440 referencias a tests automatizados de módulos funcionales. Los 5 casos end-to-end están implementados y sustituyen los flujos E2E extensos anteriores por una suite acotada de mayor valor.
 
 ## Índice de casos de prueba
 
@@ -77,6 +78,8 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | CU-I-AD-01 | Integración | Admin | Roles de lectura administrativa permiten decisión académica | 2 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
 | CU-I-AD-02 | Integración | Admin | Seguro escolar queda restringido a Dirección de carrera | 3 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
 | CU-I-AD-03 | Integración | Admin | Reportes administrativos usan roles propios de análisis | 2 | [`modules/admin/admin-integracion.md`](modules/admin/admin-integracion.md) |
+| CU-U-AT-01 | Unitaria | Audit | Listado y detalle de auditoría sanitizan valores sensibles | 3 | [`modules/audit/audit-unitarias.md`](modules/audit/audit-unitarias.md) |
+| CU-U-AT-02 | Unitaria | Audit | Política de auditoría permite solo Superadmin | 2 | [`modules/audit/audit-unitarias.md`](modules/audit/audit-unitarias.md) |
 | CU-U-AU-01 | Unitaria | Auth | Credenciales locales válidas o incorrectas | 4 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-02 | Unitaria | Auth | Login emite tokens y persiste refresh token como hash | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
 | CU-U-AU-03 | Unitaria | Auth | Creación de sesión para usuario emite claims y refresh persistido | 1 | [`modules/auth/auth-unitarias.md`](modules/auth/auth-unitarias.md) |
@@ -206,6 +209,7 @@ Este índice resume cada caso con su nombre corto, tipo, módulo, cantidad de te
 | --- | --- |
 | `modules/admin/admin-unitarias.md` | Casos unitarios del módulo `admin`. |
 | `modules/admin/admin-integracion.md` | Casos de integración del módulo `admin`. |
+| `modules/audit/audit-unitarias.md` | Casos unitarios del módulo `audit`. |
 | `modules/auth/auth-unitarias.md` | Casos unitarios del módulo `auth`. |
 | `modules/auth/auth-integracion.md` | Casos de integración del módulo `auth`. |
 | `modules/auth/auth-end-to-end.md` | Flujos end-to-end documentados del módulo `auth`. |

@@ -1,19 +1,31 @@
 # Auditoría funcional y trazabilidad
 
 Este documento separa la trazabilidad funcional actualmente implementada de la
-auditoría transversal pendiente. Su objetivo es evitar confundir historial de
-negocio, logs técnicos y auditoría consultable por roles.
+auditoría transversal disponible hoy y de la cobertura que todavía sigue
+pendiente. Su objetivo es evitar confundir historial de negocio, logs técnicos y
+auditoría consultable por roles.
 
 ## Estado actual
 
-La plataforma cuenta con trazabilidad funcional en varios dominios, pero no
-posee todavía un módulo transversal completo de auditoría con catálogo único,
-API de consulta, filtros por rol y visor administrativo.
+La plataforma ya cuenta con un módulo transversal inicial de auditoría
+consultable por API para `Superadmin`, además de varias superficies históricas
+de trazabilidad funcional en dominios específicos.
+
+Hoy existe:
+
+- API de auditoría bajo `/audit/events` y `/audit/events/{event_id}`.
+- Filtros por fecha, acción, entidad, actor, entidad afectada y texto libre.
+- Autorización por rol `Superadmin`.
+- Respuestas sanitizadas para listado y detalle.
+
+Todavía no existe una cobertura uniforme de todos los dominios ni un catálogo de
+eventos completamente consolidado.
 
 ## Superficies existentes
 
 | Superficie | Persistencia | Qué registra | Uso |
 | --- | --- | --- | --- |
+| Auditoría transversal | `audit_log` y API `/audit/events` | Eventos normalizados por acción, entidad, actor, metadata y filtros de consulta. | Consulta administrativa para `Superadmin`. |
 | Historial administrativo de práctica | `internship_status_history` | Cambios de `currentstate`, actor, motivo y metadata. | Seguimiento de aprobación, rechazo, edición y anulación. |
 | Historial local DIRAE | `internship_dirae_status_history` | Preparación, rectificación y exportación local del expediente. | Trazabilidad interna del paquete documental; no representa estado externo de DIRAE. |
 | Exportación local DIRAE | `LogAction` mediante evento `dirae_export_generated` | Actor, prácticas exportadas, documentos aprobados, archivo y resultado local. | Auditoría de negocio de la exportación CSV. |
@@ -22,14 +34,31 @@ API de consulta, filtros por rol y visor administrativo.
 | Notificaciones | `notification` | Evento, destinatario, estado de envío, payload, `sent_at` y `read_at`. | Trazabilidad comunicacional, no auditoría de decisión. |
 | Logs técnicos | Logging de aplicación | Errores, advertencias y eventos operativos. | Diagnóstico técnico; no reemplaza auditoría funcional persistente. |
 
+## API disponible
+
+La API actual de auditoría expone:
+
+| Método | Ruta | Propósito | Acceso |
+| --- | --- | --- | --- |
+| GET | `/audit/events` | Lista eventos con paginación y filtros. | Superadmin |
+| GET | `/audit/events/{event_id}` | Obtiene detalle sanitizado de un evento. | Superadmin |
+
+Filtros soportados actualmente:
+
+- `limit`, `offset`
+- `date_from`, `date_to`
+- `action`, `entity`
+- `actor_id`, `entity_id`
+- `search`
+- `without_actor`
+
 ## Qué no está cubierto todavía
 
-La auditoría transversal pendiente debe resolver:
+La auditoría transversal pendiente todavía debe resolver:
 
-- Catálogo único de eventos de auditoría.
-- API de consulta con filtros por actor, entidad, evento, fecha y resultado.
-- Autorización para consultar auditoría según rol.
-- Visor administrativo o reporte exportable.
+- Catálogo único y exhaustivo de eventos de auditoría para todos los dominios.
+- Cobertura uniforme de acciones críticas fuera de los dominios ya auditados.
+- Visor administrativo o reporte exportable más allá de la API base.
 - Cobertura uniforme de usuarios/roles, prácticas, documentos sensibles,
   inducción, agenda, autoevaluación, evaluación del supervisor, carta,
   portabilidad y notificaciones críticas.
@@ -52,14 +81,14 @@ La auditoría transversal pendiente debe resolver:
 
 ## Regla PO
 
-Para cierre Sprint 11, las superficies existentes permiten trazabilidad funcional
-de los flujos principales, pero **no cierran la tarea de auditoría transversal**.
-La deuda debe pasar a Sprint 12 como corrección/fortalecimiento técnico con
+Las superficies existentes y la API actual permiten una primera capa de
+auditoría transversal, pero **no cierran todavía la cobertura funcional completa
+del sistema**. La deuda restante debe tratarse como fortalecimiento técnico con
 criterio de cierre verificable:
 
 1. catálogo de eventos aprobado;
 2. persistencia uniforme;
-3. API/consulta autorizada;
+3. cobertura de acciones críticas priorizadas;
 4. evidencia de eventos críticos generados por acciones reales;
 5. documentación de retención y minimización.
 
@@ -69,4 +98,3 @@ La exportación DIRAE registra un evento local `dirae_export_generated`. Ese
 evento confirma que la plataforma generó el archivo localmente; no confirma
 recepción, procesamiento ni aprobación por DIRAE, porque ese proceso ocurre fuera
 de la plataforma.
-

@@ -38,6 +38,7 @@ aprobación.
 - Corregir campos editables con trazabilidad administrativa.
 - Anular lógicamente una práctica con motivo obligatorio.
 - Exponer contenido e intentos de inducción obligatoria.
+- Administrar versiones de inducción para actores académicos.
 - Diagnosticar elegibilidad antes de continuar con el trámite.
 
 ## Ámbito y responsabilidades
@@ -59,6 +60,7 @@ resultado se usa como prerrequisito del flujo de aprobación.
 - Edición administrativa acotada.
 - Anulación lógica de prácticas.
 - Evaluación de inducción obligatoria.
+- Gestión administrativa de versiones de inducción.
 - Sincronización de requisitos académicos al aprobar.
 - Emisión de eventos de notificación asociados al flujo.
 
@@ -80,9 +82,12 @@ resultado se usa como prerrequisito del flujo de aprobación.
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
 | Controller | `app/modules/internships/controllers/internship_controller.py` | Define rutas HTTP, dependencias, roles y permisos de lectura. |
+| Controller | `app/modules/internships/controllers/induction_admin_controller.py` | Define CRUD administrativo y publicación de versiones de inducción. |
 | Service | `app/modules/internships/services/internship_service.py` | Orquesta casos de uso, reglas de negocio, transiciones y notificaciones. |
+| Service | `app/modules/internships/services/induction_admin_service.py` | Orquesta borradores, edición, publicación y eliminación de versiones. |
 | Repository | `app/modules/internships/repositories/internship_repository.py` | Encapsula persistencia y consultas de prácticas, estados, inducción y excepciones. |
 | Schemas | `app/modules/internships/schemas/internship_schema.py` | Define contratos HTTP de solicitudes, respuestas, dashboard, acciones, excepciones e inducción. |
+| Schemas | `app/modules/internships/schemas/induction_admin_schema.py` | Define contratos administrativos de versiones, preguntas y publicación. |
 | Models | `app/modules/internships/models/internship_model.py` | Define `Internship`, periodos, tipos de práctica y relaciones principales. |
 | Models | `app/modules/internships/models/current_state_model.py` | Define estados funcionales de práctica. |
 | Models | `app/modules/internships/models/internship_status_history_model.py` | Registra historial de cambios de estado y acciones administrativas. |
@@ -136,6 +141,16 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 4. El backend compara respuestas contra la versión activa.
 5. Se calcula `score` y `passed` según `min_score`.
 6. Se persiste el intento y se retorna el resultado.
+
+#### Administración de inducción
+
+1. Un actor con rol `Encargado de practica` o `Director de carrera` llama a
+   `/induction/admin/versions`.
+2. Puede listar versiones existentes, crear un borrador, consultar detalle,
+   editar, publicar y eliminar versiones.
+3. La publicación deja una versión como activa y publicada.
+4. El detalle administrativo incluye información suficiente para editar preguntas,
+   videos, puntaje mínimo y respuesta correcta.
 
 #### Diagnóstico de elegibilidad
 
@@ -241,6 +256,12 @@ El módulo reutiliza autenticación y roles desde `auth`, configuración global 
 | GET | `/internships/me` | Lista prácticas del usuario autenticado. | Bearer token |
 | GET | `/internships/induction` | Retorna contenido de inducción activo y publicado. | Bearer token |
 | POST | `/internships/induction/attempts` | Registra y evalúa un intento de inducción. | Estudiante |
+| GET | `/induction/admin/versions` | Lista versiones de inducción para administración. | Encargado de practica, Director de carrera |
+| POST | `/induction/admin/versions` | Crea un borrador de inducción. | Encargado de practica, Director de carrera |
+| GET | `/induction/admin/versions/{version_id}` | Obtiene detalle administrativo de una versión. | Encargado de practica, Director de carrera |
+| PATCH | `/induction/admin/versions/{version_id}` | Edita una versión de inducción. | Encargado de practica, Director de carrera |
+| POST | `/induction/admin/versions/{version_id}/publish` | Publica o activa una versión. | Encargado de practica, Director de carrera |
+| DELETE | `/induction/admin/versions/{version_id}` | Elimina una versión de inducción. | Encargado de practica, Director de carrera |
 | GET | `/internships/registration-eligibility` | Retorna diagnóstico de requisitos y siguiente paso. | Bearer token |
 | GET | `/internships/{internship_id}` | Obtiene detalle de una práctica. | Propietario o rol privilegiado |
 | GET | `/internships/{internship_id}/tracking` | Lista historial cronológico de estados. | Propietario o rol privilegiado |

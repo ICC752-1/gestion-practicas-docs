@@ -20,7 +20,8 @@
 ## Resumen operativo
 
 El módulo **`auth`** gestiona autenticación, sesiones JWT, refresh tokens
-persistidos, autorización por roles y administración básica de usuarios y roles.
+persistidos, autorización por roles, administración de usuarios y gestión
+acotada de cuentas estudiante.
 
 **Permite:**
 
@@ -33,6 +34,7 @@ persistidos, autorización por roles y administración básica de usuarios y rol
 - Restringir endpoints mediante roles.
 - Iniciar sesión con Google OAuth.
 - Administrar usuarios y asignaciones de roles.
+- Gestionar cuentas exclusivamente estudiantiles con filtros y avance académico.
 
 ## Ámbito y responsabilidades
 
@@ -51,6 +53,8 @@ el backend. También expone endpoints administrativos para usuarios y roles.
 - Inicio de sesión con Google OAuth y aprovisionamiento básico de estudiantes.
 - Creación, consulta y actualización administrativa de usuarios.
 - Consulta, actualización y asignación administrativa de roles.
+- Gestión acotada de cuentas estudiante para actores académicos.
+- Cálculo de avance académico resumido para listados de estudiantes.
 
 #### Fuera de alcance
 
@@ -68,7 +72,7 @@ el backend. También expone endpoints administrativos para usuarios y roles.
 | Capa | Archivo | Responsabilidad |
 | --- | --- | --- |
 | Controller | `app/modules/auth/controllers/auth_controller.py` | Define endpoints de sesión, usuario actual y Google OAuth. |
-| Controller | `app/modules/auth/controllers/user_controller.py` | Define endpoints administrativos de usuarios y asignaciones de roles. |
+| Controller | `app/modules/auth/controllers/user_controller.py` | Define endpoints administrativos generales y gestión acotada de cuentas estudiante. |
 | Controller | `app/modules/auth/controllers/role_controller.py` | Define endpoints administrativos de roles. |
 | Dependencies | `app/modules/auth/dependencies/auth_dependency.py` | Resuelve el usuario autenticado desde Bearer token. |
 | Dependencies | `app/modules/auth/dependencies/role_dependency.py` | Valida que el usuario tenga al menos un rol permitido. |
@@ -79,7 +83,7 @@ el backend. También expone endpoints administrativos para usuarios y roles.
 | Service | `app/modules/auth/services/role_service.py` | Lista, actualiza, asigna y remueve roles. |
 | Repository | `app/modules/auth/repositories/...` | Encapsula persistencia de usuarios, roles, refresh tokens y tokens de activación. |
 | Models | `app/modules/auth/models/...` | Define entidades ORM de usuarios, roles, asignaciones, refresh tokens y activación de cuenta. |
-| Schemas | `app/modules/auth/schemas/...` | Define contratos de entrada y salida del módulo. |
+| Schemas | `app/modules/auth/schemas/...` | Define contratos de entrada y salida del módulo, incluyendo avance académico resumido. |
 | Utils | `app/modules/auth/utils/normalization.py` | Normaliza RUT y teléfonos. |
 
 El módulo reutiliza configuración desde `app/core/config.py` y sesiones de base de
@@ -140,7 +144,7 @@ con detalle `TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
 3. Se exige `type=access` y un `sub` convertible a entero.
 4. Se consulta el usuario en base de datos.
 5. Se rechaza si el usuario no existe o está inactivo.
-6. Se retorna `CurrentUserResponse` con sus roles.
+6. Se retorna `CurrentUserResponse` con sus roles y datos académicos básicos.
 
 #### Autorización por roles
 
@@ -173,6 +177,16 @@ con detalle `TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
 6. `UserService` normaliza RUT y teléfonos.
 7. La actualización solo modifica campos enviados.
 
+#### Gestión de cuentas estudiante
+
+1. Un actor con rol académico llama a `/users/students`.
+2. El controller limita el alcance a cuentas con rol `Estudiante`.
+3. Se soportan filtros por `is_active`, búsqueda libre, paginación y ordenamiento.
+4. La creación exige `enrollment` y asigna el rol `Estudiante` sin permisos administrativos.
+5. La actualización valida unicidad de `rut` y `enrollment`.
+6. Si una cuenta estudiante se desactiva, se revocan sus refresh tokens activos.
+7. El listado puede incluir `academic_progress` resumido para cada estudiante.
+
 #### Administración de roles
 
 1. Un usuario con rol administrativo llama a endpoints `/roles` o `/users/{user_id}/roles`.
@@ -196,6 +210,9 @@ con detalle `TEMPORARY_PASSWORD_CHANGE_REQUIRED`.
 | POST | `/auth/logout` | Cierra sesión y revoca refresh token si fue enviado. | Bearer token |
 | POST | `/users` | Crea un usuario. | Superadmin |
 | GET | `/users` | Lista usuarios con filtros opcionales. | Superadmin |
+| GET | `/users/students` | Lista cuentas estudiante con filtros, orden y avance académico. | Encargado de practica, Director de carrera |
+| POST | `/users/students` | Crea una cuenta exclusivamente estudiantil. | Encargado de practica, Director de carrera |
+| PATCH | `/users/students/{user_id}` | Actualiza una cuenta exclusivamente estudiantil. | Encargado de practica, Director de carrera |
 | GET | `/users/{user_id}` | Obtiene un usuario por ID. | Superadmin |
 | PATCH | `/users/{user_id}` | Actualiza parcialmente un usuario. | Superadmin |
 | GET | `/users/{user_id}/roles` | Lista roles de un usuario. | Superadmin |
@@ -328,7 +345,11 @@ Respuesta de `GET /auth/me`.
   "email": "student@correo.cl",
   "first_name": "Juan",
   "last_name": "Pérez",
-  "roles": ["Estudiante"]
+  "roles": ["Estudiante"],
+  "degree": "Ingeniería Civil Informática",
+  "cod_degree": "ICI",
+  "enrollment": "20241234567",
+  "admission_year": 2024
 }
 ```
 
@@ -356,6 +377,39 @@ Payload administrativo para crear usuarios.
 
 Si no se envía `password`, el backend genera una credencial interna y el usuario
 define su contraseña mediante enlace de activación.
+
+</details>
+
+<details>
+<summary><strong>UserListResponse con avance académico</strong></summary>
+
+Respuesta resumida usada por `GET /users/students`.
+
+```json
+{
+  "items": [
+    {
+      "id": 10,
+      "email": "student@correo.cl",
+      "first_name": "Juan",
+      "last_name": "Pérez",
+      "rut": "12.345.678-9",
+      "enrollment": "20241234567",
+      "roles": ["Estudiante"],
+      "academic_progress": {
+        "completed_count": 1,
+        "total_count": 4,
+        "current_type": "Práctica de Estudio II",
+        "current_status": "En revisión",
+        "items": []
+      }
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0
+}
+```
 
 </details>
 
