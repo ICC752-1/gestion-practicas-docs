@@ -25,6 +25,7 @@ Ejemplos actuales:
 - `gestion-practicas-backend/tests/modules/internships/internships_test.yaml`
 - `gestion-practicas-backend/tests/modules/auth/auth_endpoints_test.yaml`
 - `gestion-practicas-backend/tests/modules/documents/documents_test.yaml`
+- `gestion-practicas-backend/tests/modules/admin/admin_test.yaml`
 
 Para módulos nuevos usar el mismo patrón: `auth_test.yaml`, `admin_test.yaml`, `documents_test.yaml`, `tracking_test.yaml`.
 
@@ -91,17 +92,15 @@ Para login simple:
 
 ```yaml
 body:
-  mimeType: application/x-www-form-urlencoded
-  params:
-    - name: username
-      value: "{{ _.test_email }}"
-      disabled: false
-    - name: password
-      value: "{{ _.test_password }}"
-      disabled: false
+  mimeType: application/json
+  text: |-
+    {
+      "email": "{{ _.test_email }}",
+      "password": "{{ _.test_password }}"
+    }
 headers:
   - name: Content-Type
-    value: application/x-www-form-urlencoded
+    value: application/json
 scripts:
   afterResponse: |-
     const body = insomnia.response.json();
@@ -114,11 +113,10 @@ scripts:
     }
 ```
 
-El backend usa `OAuth2PasswordRequestForm` en `POST /auth/login`; por eso el
-login debe enviarse como `application/x-www-form-urlencoded` con campos
-`username` y `password`. No usar JSON `{ "email": "...", "password": "..." }`
-para este endpoint, porque FastAPI responderá `422` indicando que faltan
-`username` y `password`.
+El backend actual usa un payload JSON tipado en `POST /auth/login`; por eso el
+login debe enviarse como `application/json` con campos `email` y `password`.
+No usar `application/x-www-form-urlencoded` ni `username`, porque esa forma ya
+no representa el contrato vigente del endpoint.
 
 Para login por rol, guardar el token en una variable explícita del rol:
 
